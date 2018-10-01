@@ -1,14 +1,80 @@
 <ion-header>
-  <ion-navbar>
-    <ion-title>
-      Ionic Blank
-    </ion-title>
-  </ion-navbar>
-</ion-header>
+    <ion-navbar>
+      <ion-title>
+        Ya Runz
+      </ion-title>
+    </ion-navbar>
+  </ion-header>
 
-<ion-content padding>
-  The world is your oyster.
-  <p>
-    If you get lost, the <a href="http://ionicframework.com/docs/v2">docs</a> will be your guide.
-  </p>
+<ion-content>  
+    <ion-list>        
+      <ion-list-header>
+          <ion-avatar item-start>
+              <img src="{{ runner?.photoUrl }}">
+            </ion-avatar>
+            <h2> Wass'up {{ runner?.userName | titlecase }} ?</h2>
+       </ion-list-header>
+      <ion-item>
+          <ion-label *ngIf="!available; else avlbl">You're not available</ion-label>
+          <ng-template #avlbl>
+            <ion-label>You're available</ion-label>
+          </ng-template>
+          <ion-toggle [(ngModel)]="available" (ionChange)="isAvailable()" color="secondary"></ion-toggle>
+      </ion-item>
+      <ion-item>
+          <ion-icon name="car" item-start></ion-icon>
+          Your Runs
+      </ion-item>    
+    </ion-list>
+    <ng-container *ngIf="tasks.length !== 0; else noTasks">
+      <ion-list *ngFor="let task of tasks">      
+        <button ion-item (click)="buttonClick(task)">
+          <ion-grid>
+            <ion-row>
+              <ion-col col-2>
+                <ion-icon name="alarm" item-start></ion-icon>
+              </ion-col>
+              <ion-col col-3>
+                <h1>{{ task.startAt | date: 'hh:mm' }}</h1>
+                <p>{{ task.startAt | date: 'dd/MM' }}</p>
+              </ion-col>
+              <ion-col col-7>
+                  <ion-list>
+                    <ion-item>
+                      <ion-icon name="pin"></ion-icon>
+                      {{ task.from.name }}
+                    </ion-item>
+                    <ion-item>
+                      <ion-icon name="pin"></ion-icon>
+                        {{ task.to.name }}
+                    </ion-item>
+                  </ion-list>
+              </ion-col>              
+            </ion-row>
+            <ion-row>
+                <ion-col col-2>
+                  
+                </ion-col>
+                <ion-col col-3>
+                  
+                </ion-col>
+                <ion-col col-7>
+                    
+                </ion-col>              
+              </ion-row>
+          </ion-grid>       
+          
+        </button>
+        <ion-item>
+          
+        </ion-item>
+      </ion-list>      
+    </ng-container>    
+    <ng-template #noTasks>
+      <ion-list>
+        <ion-item item-center>
+          You don't have any scheduled run yet
+        </ion-item>
+      </ion-list>
+    </ng-template>
 </ion-content>

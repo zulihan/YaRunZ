@@ -1,0 +1,247 @@
+<ion-header>
+    <ion-navbar>
+      <ion-title>
+        BACK
+      </ion-title>
+    </ion-navbar>
+  </ion-header>
+
+<ion-content>  
+    <ion-list>        
+      <ion-list-header>
+          <ion-item>
+              Your Run for {{ task.pers}} members of {{ task.artist.name | titlecase}}
+          </ion-item>
+       </ion-list-header>      
+         
+    </ion-list>    
+      <ion-list>              
+          <ion-grid>
+            <ion-row>
+              <ion-col col-2>
+                <ion-icon name="alarm" item-start></ion-icon>
+              </ion-col>
+              <ion-col col-3>
+                <h1>{{ task.startAt | date: 'hh:mm' }}</h1>
+                <p>{{ task.startAt | date: 'dd/MM' }}</p>
+              </ion-col>
+              <ion-col col-7>
+                  <ion-list>
+                    <ion-item>
+                      <ion-icon name="pin"></ion-icon>
+                      {{ task.from.name }}
+                    </ion-item>
+                    <ion-item>
+                      <ion-icon name="pin"></ion-icon>
+                        {{ task.to.name }}
+                    </ion-item>
+                  </ion-list>
+              </ion-col>              
+            </ion-row>
+            <ion-row>
+              <ion-col col-2>                  
+              </ion-col>
+              <ion-col col-4> 
+                  <ion-label *ngIf="!started && !oneOfTwoCompleted" [@enterAnimation]>
+                      Start 1 of 2
+                    </ion-label>
+                    <ion-label *ngIf="started && !oneOfTwoCompleted " [@enterAnimation]>
+                        complete 1 of 2
+                      </ion-label>
+                      <ion-label *ngIf="oneOfTwoCompleted && !twoOfTwoStarted" [@enterAnimation]>
+                          start 2 of 2
+                      </ion-label>
+                      <ion-label *ngIf="twoOfTwoStarted && !twoOfTwoCompleted" [@enterAnimation]>
+                          complete 2 of 2
+                      </ion-label>
+                      <ion-label *ngIf="twoOfTwoCompleted" [@enterAnimation]>
+                          Run completed !
+                      </ion-label>
+              </ion-col>              
+              <ion-col col-6>
+                <ion-list *ngIf="task.legs.length == 2 ; else threeLegs">
+
+                  <ion-item *ngIf="!started ; else oneOfTwoStarted">
+                    
+                    <ion-range #ctaList [(ngModel)]="startConfirmValue" color="secondary" (ionChange)="updateOneOfTwoStartedConfirmValue(startConfirmValue)" >
+                    </ion-range>                       
+                  </ion-item>
+
+                  <ng-template #oneOfTwoStarted>
+                    
+                    <ion-range #ctaList
+                      *ngIf="!oneOfTwoCompleted; else oneOfTwoComp"  
+                      [(ngModel)]="OneOfTwoCompletedConfirmValue"
+                      color="secondary"
+                      (ionChange)="updateOneOfTwoCompletedConfirmValue(OneOfTwoCompletedConfirmValue)" >
+                    </ion-range>
+
+                    <ng-template #oneOfTwoComp>
+                      <ion-range #ctaList
+                      *ngIf="!twoOfTwoStarted; else twoOfTwoStart"  
+                      [(ngModel)]="twoOfTwoStartedConfirmValue"
+                      color="secondary"
+                      (ionChange)="updateTwoOfTwoStartedConfirmValue(twoOfTwoStartedConfirmValue)" >
+                    </ion-range>
+                    </ng-template> 
+                                      
+                    <ng-template #twoOfTwoStart>
+                        <ion-range #ctaList
+                        *ngIf="!twoOfTwoCompleted"  
+                        [(ngModel)]="twoOfTwoCompletedConfirmValue"
+                        color="secondary"
+                        (ionChange)="updateTwoOfTwoCompletedConfirmValue(twoOfTwoCompletedConfirmValue)" >
+                      </ion-range>
+                    </ng-template>
+                    
+                    </ng-template>
+                  <ion-item>                        
+                  </ion-item>
+                </ion-list>
+                <ng-template #threeLegs>
+
+                </ng-template>
+              </ion-col>                              
+            </ion-row>
+          </ion-grid>      
+          
+        
+        <ion-item>
+          
+        </ion-item>
+      </ion-list>      
+    
+</ion-content>
+
+
+
+<!-- <ion-header>
+    <ion-navbar>
+      <ion-title>
+        BACK
+      </ion-title>
+    </ion-navbar>
+  </ion-header>
+
+<ion-content>  
+    <ion-list>        
+      <ion-list-header>
+          <ion-item>
+              <ion-icon name="car" item-start></ion-icon>
+              Your Run for {{ task.pers}} members of {{ task.artist.name | titlecase}}
+          </ion-item>
+       </ion-list-header>      
+         
+    </ion-list>    
+      <ion-list>              
+          <ion-grid>
+            <ion-row>
+              <ion-col col-2>
+                <ion-icon name="alarm" item-start></ion-icon>
+              </ion-col>
+              <ion-col col-3>
+                <h1>{{ task.startAt | date: 'hh:mm' }}</h1>
+                <p>{{ task.startAt | date: 'dd/MM' }}</p>
+              </ion-col>
+              <ion-col col-7>
+                  <ion-list>
+                    <ion-item>
+                      <ion-icon name="pin"></ion-icon>
+                      {{ task.from.name }}
+                    </ion-item>
+                    <ion-item>
+                      <ion-icon name="pin"></ion-icon>
+                        {{ task.to.name }}
+                    </ion-item>
+                  </ion-list>
+              </ion-col>              
+            </ion-row>
+            <ion-row #ctaList>
+              <ion-col col-2>                  
+              </ion-col>
+              <ion-col col-6> 
+                  <ion-label>
+                      Start 1 of 2
+                    </ion-label>
+                    <ion-label *ngIf="started">
+                        complete 1 of 2
+                      </ion-label>
+                      <ion-label *ngIf="oneOfTwoCompleted">
+                          start 2 of 2
+                      </ion-label>
+                      <ion-label *ngIf="twoOfTwoStarted">
+                          complete 2 of 2
+                        </ion-label>
+              </ion-col>              
+              <ion-col col-4>
+                <ion-list *ngIf="task.legs.length == 2 ; else threeLegs">
+                  <ion-item *ngIf="!started ; else oneOfTwoStarted">
+                    
+                    <ion-range [(ngModel)]="StartConfirmValue" color="secondary" (ionChange)="updateStartConfirmValue(StartConfirmValue)" >
+                    </ion-range>                       
+                  </ion-item>
+                  <ng-template #oneOfTwoStarted>
+                      <ion-label>
+                          <span [@enterAnimation]>started 1 of 2</span>
+                        </ion-label>
+                    <ion-range 
+                      *ngIf="!oneOfTwoCompleted; else oneOfTwoComp"  
+                      [(ngModel)]="CompletedOneOfTwoConfirmValue"
+                      color="secondary"
+                      (ionChange)="updateCompletedOneOfTwoConfirmValue(CompletedOneOfTwoConfirmValue)" >
+                    </ion-range>
+                    <ng-template #oneOfTwoComp>
+                        <ion-label>
+                            <span [@enterAnimation]>completed 1 of 2</span>
+                          </ion-label>
+                    </ng-template>
+                    <ion-range 
+                      *ngIf="!twoOfTwoStarted; else twoOfTwoComp"  
+                      [(ngModel)]="CompletedOneOfTwoConfirmValue"
+                      color="secondary"
+                      (ionChange)="updateTwoOfTwoStartedConfirmValue(CompletedOneOfTwoConfirmValue)" >
+                    </ion-range>
+                    <ng-template #twoOfTwoComp>
+                        <ion-label>
+                            <span [@enterAnimation]>started 2 of 2</span>
+                          </ion-label>
+                    </ng-template>
+                    
+                    </ng-template>
+                  <ion-item>                        
+                  </ion-item>
+                </ion-list>
+                <ng-template #threeLegs>
+
+                </ng-template>
+              </ion-col>                              
+            </ion-row>
+          </ion-grid>      
+          
+        
+        <ion-item>
+          
+        </ion-item>
+      </ion-list>      
+    
+</ion-content> -->
+
+
+<!-- animations: [
+    trigger(
+      'enterAnimation', [
+        transition(':enter', [
+          style({transform: 'translateX(100%)', opacity: 0}),
+          animate('3000ms', style({transform: 'translateX(0)', opacity: 1}))
+        ]),
+        transition(':leave', [
+          style({transform: 'translateX(0)', opacity: 1}),
+          animate('3000ms', style({transform: 'translateX(100%)', opacity: 0}))
+        ])
+      ]
+    )
+  ], -->
+  <!-- nativeElement.children[""0""].children[""0""].children[""0""].children[""0""].children[""0""].children[""0""].children[""0""].textContent
+   -->
+
+  
