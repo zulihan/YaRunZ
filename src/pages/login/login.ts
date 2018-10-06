@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { NavController } from 'ionic-angular';
 import { TabsPage } from '../tabs/tabs';
 import { AuthService } from '../../app/_services/auth.service';
+import { GeoService } from '../../app/_services/geo.service';
+import { LoadingController } from 'ionic-angular';
 
 @Component({
   selector: 'page-login',
@@ -11,12 +13,16 @@ export class LoginPage {
   username: string;
   password: string;
 
-  constructor(public navCtrl: NavController, private authService: AuthService) {
+  constructor(
+    public navCtrl: NavController,
+    public loadingController: LoadingController,
+    private authService: AuthService,
+    private geoService: GeoService) {
 
   }
 
   login() {
-    this.navCtrl.push(TabsPage);
+        
     // this.authService.login(this.username, this.password)
     // .subscribe(
     //   response => {
@@ -28,7 +34,19 @@ export class LoginPage {
     //   error => {
     //     console.log(error.message);   
     //   }
-    // );        
+    // );     
+    // this.geoService.getPosition();
+    this.loadApp();   
   }
 
+  loadApp() {
+    let loader = this.loadingController.create({
+      spinner: 'bubbles',
+      content: 'fetching data',
+      duration: 3000
+    });
+    loader.present().then( ()=> {
+      this.navCtrl.push(TabsPage);
+    });    
+  }
 }

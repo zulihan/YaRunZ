@@ -6,6 +6,9 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { IonicApp, IonicErrorHandler, IonicModule } from 'ionic-angular';
 import { SplashScreen } from '@ionic-native/splash-screen';
 import { StatusBar } from '@ionic-native/status-bar';
+import { Geolocation } from '@ionic-native/geolocation';
+import  { IonicStorageModule} from '@ionic/storage';
+import { GoogleMaps, GoogleMap } from '@ionic-native/google-maps';
 
 import { AngularFireModule } from 'angularfire2';
 import { AngularFirestoreModule } from 'angularfire2/firestore';
@@ -23,34 +26,40 @@ import { AuthService } from './_services/auth.service';
 import { TasksService } from './_services/tasks.service';
 
 import { JwtModule } from '@auth0/angular-jwt';
-
+import { GeoService } from './_services/geo.service';
+import { RunzService } from './_services/runz.service';
+import { RunnerService } from './_services/runner.service';
+import { MapComponent } from './map/map.component';
 
 @NgModule({
-  declarations: [
-    MyApp,
-    HomePage,
-    MapPage,
-    ContactPage,
-    LoginPage,
-    TabsPage,
-    TaskDetailPage
-  ],
-  imports: [
-    BrowserModule,
-    HttpModule,
-    IonicModule.forRoot(MyApp),
-    JwtModule.forRoot({
-      config: {
-        tokenGetter: () => {
-          return localStorage.getItem('token');
-        },
-        whitelistedDomains: ['localhost:5000'],
-        blacklistedRoutes: ['localhost:5000/api/auth']
-      }
-    }),
+   declarations: [
+      MyApp,
+      HomePage,
+      MapPage,
+      ContactPage,
+      LoginPage,
+      TabsPage,
+      TaskDetailPage,
+      MapComponent
+   ],
+   imports: [
+      BrowserModule,
+      HttpModule,
+      IonicModule.forRoot(MyApp),
+      JwtModule.forRoot({
+        config: {
+          tokenGetter: () => {
+            return localStorage.getItem('token');
+          },
+          whitelistedDomains: ['localhost:5000'],
+          blacklistedRoutes: ['localhost:5000/api/auth']
+        }  
+      }), 
+
     AngularFireModule.initializeApp(environment.firebaseConfig),
     AngularFirestoreModule,
-    BrowserAnimationsModule
+    BrowserAnimationsModule,
+    IonicStorageModule
   ],
   bootstrap: [IonicApp],
   entryComponents: [
@@ -66,8 +75,16 @@ import { JwtModule } from '@auth0/angular-jwt';
     StatusBar,
     SplashScreen,
     AuthService,
+    Geolocation,
+    GeoService,
+    GoogleMaps,
+    RunzService,
     TasksService,
+    RunnerService,
     {provide: ErrorHandler, useClass: IonicErrorHandler}
+  ],
+  exports: [
+    MapComponent
   ]
 })
 export class AppModule {}

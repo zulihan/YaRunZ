@@ -14,3 +14,89 @@
 // To declare rules for a specific mode, create a child rule
 // for the .md, .ios, or .wp mode classes. The mode class is
 // automatically applied to the <body> element in the app.
+ion-icon {
+    color: #00acc1;
+
+    .icon-big {
+        font-size: 1.8em;
+    }
+}
+
+ion-row.row {
+    display:  flex;
+    /* justify-content: stretch; */
+    /* justify-items: baseline; */
+    align-items:  center;
+    align-content: left;
+}
+
+ion-col.col {}
+
+h1.ng-tns-c0-0 {
+    margin: 0;
+}
+
+ion-col.col {
+    /* border-left: 1px solid; */
+}
+
+ion-col.col {
+    /* border-left: 1px solid; */
+}
+
+ion-icon.icon-big.icon.icon-md.ion-md-alarm {
+    font-size: 1.8em;
+}
+
+.item-md {
+    background: transparent;
+
+}
+
+.tabs-md .tabbar {
+    background-color: map-get($colors, primary);
+
+    .icon {
+        color: map-get($colors, secondary) !important;
+    }    
+}
+
+.tab-button[aria-selected=false] {
+    color: white !important;
+    .icon {
+        color: white !important;
+    }
+}
+
+.tab-button[aria-selected=true] {
+    color: map-get($colors, secondary) !important;
+}
+
+
+.toolbar.toolbar-md {
+    background-color: map-get($colors, primary) !important;
+
+    .toolbar-background-md {
+        background-color: map-get($colors, primary) !important;
+    }
+
+    .back-button-icon.icon.icon-md.back-button-icon-md.ion-md-arrow-back {
+        color: map-get($colors, secondary) !important;
+    }
+
+    .toolbar-content {
+        color: map-get($colors, secondary) !important;
+    }
+
+    .toolbar-title-md {
+        color: map-get($colors, secondary) !important;
+        display: flex;
+        justify-content: space-between;
+    }
+}
+
+.time-to-go {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}

@@ -41,8 +41,8 @@ export class AuthService {
       username,
       password
     };
-    console.log(JSON.parse(localStorage.getItem('user')));
-    
+    // console.log(JSON.parse(localStorage.getItem('user')));
+
     // return this.currentUser = JSON.parse(localStorage.getItem('user'));
     // return this.http.post(this.baseUrl + 'login', model)
     //   .pipe(

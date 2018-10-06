@@ -1,0 +1,1 @@
+cmd /k ionic cordova run android --target 127.0.0.1:21503 --livereload --prop

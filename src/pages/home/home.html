@@ -6,25 +6,32 @@
     </ion-navbar>
   </ion-header>
 
-<ion-content>  
+<ion-content> 
+  <ion-refresher (ionRefresh)="doRefresh($event)"> 
+    <ion-refresher-content
+      pullingText="Pull to refresh"
+      pullingIcon="arrow-dropdown"
+      refreshingSpinner="circles"
+      refreshingText="...fetching">
+
+    </ion-refresher-content>
+  </ion-refresher>
     <ion-list>        
       <ion-list-header>
-          <ion-avatar item-start>
+          <!-- <ion-avatar item-start>
               <img src="{{ runner?.photoUrl }}">
             </ion-avatar>
-            <h2> Wass'up {{ runner?.userName | titlecase }} ?</h2>
-       </ion-list-header>
-      <ion-item>
-          <ion-label *ngIf="!available; else avlbl">You're not available</ion-label>
+            <h2> Wass'up {{ runner?.userName | titlecase }} yo?</h2> -->
+            <ion-label *ngIf="!available; else avlbl">You're not available yo ?</ion-label>
           <ng-template #avlbl>
             <ion-label>You're available</ion-label>
           </ng-template>
-          <ion-toggle [(ngModel)]="available" (ionChange)="isAvailable()" color="secondary"></ion-toggle>
-      </ion-item>
-      <ion-item>
+          <ion-toggle [(ngModel)]="available" (ionChange)="isAvailable($event)" color="secondary"></ion-toggle>
+       </ion-list-header>      
+      <!-- <ion-item>
           <ion-icon name="car" item-start></ion-icon>
           Your Runs
-      </ion-item>    
+      </ion-item>     -->
     </ion-list>
     <ng-container *ngIf="tasks.length !== 0; else noTasks">
       <ion-list *ngFor="let task of tasks">      
@@ -32,9 +39,9 @@
           <ion-grid>
             <ion-row>
               <ion-col col-2>
-                <ion-icon name="alarm" item-start></ion-icon>
+                <ion-icon name="alarm" item-start  class="icon-big"></ion-icon>
               </ion-col>
-              <ion-col col-3>
+              <ion-col col-3 class="time-to-go">
                 <h1>{{ task.startAt | date: 'hh:mm' }}</h1>
                 <p>{{ task.startAt | date: 'dd/MM' }}</p>
               </ion-col>
@@ -50,18 +57,7 @@
                     </ion-item>
                   </ion-list>
               </ion-col>              
-            </ion-row>
-            <ion-row>
-                <ion-col col-2>
-                  
-                </ion-col>
-                <ion-col col-3>
-                  
-                </ion-col>
-                <ion-col col-7>
-                    
-                </ion-col>              
-              </ion-row>
+            </ion-row>            
           </ion-grid>       
           
         </button>

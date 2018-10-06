@@ -1,28 +1,58 @@
 task-detail {
     .confirmed {
         transition: display 3s;
-        display: block;
+        display: block;        
+    }  
+    
+    h1 {
+        margin: 0;
+        color: map-get($colors, primary);
     }
+
+    p {
+        text-align: center;
+    }
+
+    .list-md {
+        margin: 0;
+    }
+
+    .detail-time {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        align-content: flex-start;
+    }
+    
 
     ion-range.range.range-md {
         overflow: hidden;
         background: #ffffff;
         border-radius: 30px;        
-    }    
+        
 
-    .range-bar {
-        left: 0;
-        top: 0 !important;
-        position: absolute;
-        width: 100%;
-        height: 100% !important;
-        background: #f7f7f7 !important;
-        pointer-events: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        border-radius: 20px;
+        .range-bar {
+            left: 0;
+            top: 0 !important;
+            position: absolute;
+            // width: 100%;
+            height: 100% !important;
+            background: map-get($colors, primary);
+            pointer-events: none;
+            display: flex;
+            align-items: center;            
+            border-radius: 20px;
+            
+
+            &:not(.range-bar-active) {
+                justify-content: center;
+                text-align: center;
+                color: map-get($colors, secondary);
+                font-size: 0.8em;
+                padding-left: 25px;
+            }
+        }
+
     }
 
     .range-bar.range-bar-active {
@@ -41,23 +71,95 @@ task-detail {
     }
 
     .range-md .range-knob {
-        left: 20px;
-        top: 0;
-        border-radius: 50%;
+        left: 12px;
+        top: -6px;
+        border-radius: 30px;
         position: absolute;
         z-index: 2;
-        width: 100%;
-        height: 100%;
-        background: #e9e9e9;
-        -webkit-transform: scale(0.80);
-        transform: scale(0.80);        
+        width: 180%;
+        height: 130%;
+        // -webkit-transform: scale(0.80);
+        // transform: scale(0.80);       
     }
 
+    .range-knob .range-knob-pressed {
+        -webkit-transform: scale(0.67);
+        transform: scale(0.67);
+    }
+
+    .range-knob::after {
+        content: ">>";
+        // margin-top: 20px;
+        position: absolute;
+        top: 12px;
+        font-size: 33px;
+        left: 20px;
+        line-height: 100%;
+        font-family: 'Anonymous Pro', monospace, 'Nanum Gothic Coding', monospace;
+        /* height: 100%; */
+        color: map-get($colors, secondary);
+    }
+
+    .range-ios .range-knob {
+        left: 20px;
+        top: 7px;
+        border-radius: 25px;
+        position: absolute;
+        width: 100%;
+        height: 28px;
+        background: #fff;
+        -webkit-box-shadow: 0 3px 1px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.13), 0 0 0 1px rgba(0, 0, 0, 0.02);
+        box-shadow: 0 3px 1px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.13), 0 0 0 1px rgba(0, 0, 0, 0.02);
+        pointer-events: none;
+
+        &::after {
+            content: ">>";
+            // margin-top: 20px;
+            position: absolute;
+            top: 5px;
+            font-size: 15px;
+            left: 12px;
+        }
+    }    
+
+    .range-ios .range-bar {
+        left: 0;
+        top: 21px;
+        border-radius: 25px;
+        position: absolute;
+        // width: 100%;
+        height: 1px;
+        background: #74e2d4;
+        pointer-events: none;
+    }
+
+    
+
     .range-md .range-knob-min.range-knob-min .range-knob {
-        border: 2px solid #bdbdbd;
+        border: none;
         background: #fff;
     }
 
+    .range-knob-pressed .range-knob {
+        scale: 0;
+    }
+
+    .range-md-secondary .range-bar-active, .range-md-secondary .range-knob, .range-md-secondary .range-pin, .range-md-secondary .range-pin::before {
+        background: #ffffff;
+    }
+
+    .map-container {
+        width: 100%;
+        height: 300px;
+        
+        #map_canvas {
+            height: 100%;
+            width: 100%;
+        }
+    }
+    
+    
+    
     
     
 }

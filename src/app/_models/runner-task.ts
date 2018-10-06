@@ -13,6 +13,7 @@ export interface RunnerTask {
     from: Place;
     to: Place;
     startAt?: any;
+    startedAt?: any;
     startAtToString: string;
     updatedAt?: string;
     status: string;

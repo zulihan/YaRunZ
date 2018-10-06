@@ -5,6 +5,7 @@ import { TasksService } from '../../app/_services/tasks.service';
 import { Runner } from '../../app/_models/runner';
 import { RunnerTask } from '../../app/_models/runner-task';
 import { TaskDetailPage } from '../task-detail/task-detail';
+import { RunnerService } from '../../app/_services/runner.service';
 
 @Component({
   selector: 'page-home',
@@ -19,7 +20,8 @@ export class HomePage implements OnInit {
   constructor(
     public navCtrl: NavController,
     public authService: AuthService,
-    private tasksService: TasksService) {
+    private tasksService: TasksService,
+    private runnerService: RunnerService) {
 
     
   }
@@ -27,9 +29,22 @@ export class HomePage implements OnInit {
   ngOnInit() {
     this.available = false;
     // this.runner = this.authService.currentUser;
-    this.tasksService.getRunnerTasks();
+    // this.tasksService.getRunnerTasks();
     this.runner = JSON.parse(localStorage.getItem('user')); 
     console.log('this runner: ', this.runner);
+    this.doRefresh(0);
+  }
+
+  buttonClick(task) {
+    this.navCtrl.push(TaskDetailPage, task);
+  }
+
+  // goBack() {
+  //   console.log("popping");
+  //   this.navCtrl.pop();
+  // }
+
+  doRefresh(refresher) {
     this.tasksService.getRunnerTasks()
       .subscribe( tsks => {     
         if (tsks && tsks.length > 0) {
@@ -37,16 +52,13 @@ export class HomePage implements OnInit {
           console.log('runner tasks: ', tsks);
           this.tasks = tsks; 
         }  
-      });      
+      });
+    if (refresher !== 0) refresher.complete();
   }
 
-  buttonClick(task) {
-    this.navCtrl.push(TaskDetailPage, task);
-  }
-
-  goBack() {
-    console.log("popping");
-    this.navCtrl.pop();
+  isAvailable(event) {
+    console.log('this.available', event.value);
+    this.runnerService.updateRunnerPosition(event.value);
   }
 
 }

@@ -1,3 +1,15 @@
 page-home {
+
+    .toggle-md .toggle-icon {
+        background-color: map-get($colors, primary);        
+    }
+
+    .toggle .toggle-md .toggle-md-secondary .ng-valid .ng-dirty .ng-touched .toggle-checked .toggle-icon {
+        background-color: map-get($colors, secondary);
+    }
+
+    .toggle-md-secondary.toggle-checked .toggle-inner {
+        background-color: white;
+    }   
     
 }

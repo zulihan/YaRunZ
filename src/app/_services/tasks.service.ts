@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreCollection, AngularFirestoreDocument } from 'angularfire2/firestore';
 
 import { Observable } from 'rxjs/Observable';
+// import { map } from 'rxjs/operators';
+import 'rxjs/add/operator/map';
 import { Task } from '../_models/task';
 import { Subject } from 'rxjs/Subject';
 import { RunnerTask } from '../_models/runner-task';
@@ -34,9 +36,11 @@ export class TasksService {
 
     constructor(private afs: AngularFirestore, private authService: AuthService) {
         // this.id = +this.authService.currentUser.id;
-        this.runner = JSON.parse(localStorage.getItem('user'));
-        console.log(this.runner.id);
-        this.runnersTasksCollection = this.afs.collection('runnersTasks', ref => ref.where('runner.id', '==', this.runner.id));
+
+        // this.runner = JSON.parse(localStorage.getItem('user'));
+        // console.log(this.runner.id);
+        this.runnersTasksCollection = this.afs.collection('runnersTasks', ref => ref.where('runner.id', '==', 6));
+        // this.runnersTasksCollection = this.afs.collection('runnersTasks', ref => ref.where('runner.id', '==', this.runner.id));
         console.log(this.runnersTasksCollection);
     }
 
@@ -54,7 +58,7 @@ export class TasksService {
 
 
     updateRunnerTask(taskId: string, task: RunnerTask) {
-        this.runnerTask = this.tasksCollection.doc<RunnerTask>(taskId);
+        this.runnerTask = this.runnersTasksCollection.doc<RunnerTask>(taskId);
         this.runnerTask.update(task);
         // this.editedRunnerTask.next(this.taskToEditReset());
     }
