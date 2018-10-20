@@ -1,3 +1,6 @@
+// @import "~@angular/material/prebuilt-themes/indigo-pink.css";
+
+
 // http://ionicframework.com/docs/theming/
 
 
@@ -15,11 +18,11 @@
 // for the .md, .ios, or .wp mode classes. The mode class is
 // automatically applied to the <body> element in the app.
 ion-icon {
-    color: #00acc1;
+    color: #00acc1;    
+}
 
-    .icon-big {
-        font-size: 1.8em;
-    }
+.icon-big {
+    font-size: 1.8em;
 }
 
 ion-row.row {

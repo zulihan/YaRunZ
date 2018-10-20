@@ -13,18 +13,95 @@ task-detail {
         text-align: center;
     }
 
+    .grid {
+        padding: 0;
+        margin-left: 0;
+    }
+        
+
     .list-md {
         margin: 0;
     }
 
-    .detail-time {
+    .header-item {
         display: flex;
         justify-content: space-around;
+        flex: 1 0 auto;
+        // align-content: flex-start;         
+        
+        .date-time {
+            align-self: flex-start;
+        }
+    } 
+    
+    .label.label-md.ng-star-inserted {
+        margin: 10px 0 0;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .item.item-block.item-md {
+        padding: 0;
+    }
+    
+    .icon-big.icon.icon-md.ion-md-alarm.item-icon {
+        align-self: flex-start;
+    } 
+
+    .direction-arrow {
+        text-align: center;
+        font-size: 1.8em;
+        font-family: 'Anonymous Pro', monospace, 'Nanum Gothic Coding';
+        color: #00acc1;
+    }
+    
+    // Progress bar
+    .route-location {
+        display: flex;
         align-items: center;
-        align-content: flex-start;
+        flex-direction: column;       
+    }
+
+    progress-bar {
+        width: 100%;
+
+        .progress-outer {
+            width: 100%;
+            padding: 3px;
+            color: #fff;
+            text-align: center;
+        }
+
+        .progress-inner {
+            width: 100%;
+            background-color: rgb(72, 138, 255);
+            color: rgb(72, 138, 255);
+        }
+    }
+
+    .mat-progress-bar {
+        margin: 0 5px;
+    }
+
+    .mat-progress-bar-buffer {
+        background-color: #00abc1a1;
+    }
+
+    .mat-progress-bar-fill::after {
+        background-color: #00acc1;
     }
     
 
+    .route-progress-section {
+        display: flex;
+        align-items: center;
+      }
+      
+      .route-progress-margin {
+        margin: 0 10px;
+      }
+
+    
     ion-range.range.range-md {
         overflow: hidden;
         background: #ffffff;
@@ -156,6 +233,11 @@ task-detail {
             height: 100%;
             width: 100%;
         }
+    }
+
+    .map_wrapper {
+        height: 100%;
+        width: 100%;
     }
     
     

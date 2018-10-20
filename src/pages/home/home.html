@@ -22,11 +22,11 @@
               <img src="{{ runner?.photoUrl }}">
             </ion-avatar>
             <h2> Wass'up {{ runner?.userName | titlecase }} yo?</h2> -->
-            <ion-label *ngIf="!available; else avlbl">You're not available yo ?</ion-label>
+            <ion-label *ngIf="!isAvailable; else avlbl">You're not available yo ?</ion-label>
           <ng-template #avlbl>
             <ion-label>You're available</ion-label>
           </ng-template>
-          <ion-toggle [(ngModel)]="available" (ionChange)="isAvailable($event)" color="secondary"></ion-toggle>
+          <ion-toggle [(ngModel)]="isAvailable" (ionChange)="updateAvailable($event)" color="secondary"></ion-toggle>
        </ion-list-header>      
       <!-- <ion-item>
           <ion-icon name="car" item-start></ion-icon>

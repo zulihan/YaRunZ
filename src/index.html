@@ -15,6 +15,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
+  <script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCmP4Ylc1nwroo8vZ2UCW7pamprKNusD6A"></script>
+
   <!-- cordova.js required for cordova apps (remove if not needed) -->
   <script src="cordova.js"></script>
 
@@ -26,14 +28,18 @@
         .catch(err => console.error('Error', err));
     }
   </script>-->
-
+  <base href="/">
   <link href="build/main.css" rel="stylesheet">
-
+  <!-- <link href="node_modules/@angular/material/theming" rel="stylesheet" type="text/css"> -->
+  <link href="assets/indigo-pink.css" rel="stylesheet" type="text/css">
+  
 </head>
 <body>
 
   <!-- Ionic's root component and where the app will load -->
   <ion-app></ion-app>
+
+  
 
   <!-- The polyfills js is generated during the build process -->
   <script src="build/polyfills.js"></script>
@@ -44,6 +50,7 @@
 
   <!-- The main bundle js is generated during the build process -->
   <script src="build/main.js"></script>
+  
 
 </body>
 </html>

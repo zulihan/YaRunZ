@@ -86,3 +86,13 @@ $colors: (
 
 @import "roboto";
 @import "noto-sans";
+// @import "Anonymous Pro, monospace";
+// @import "Nanum Gothic Coding, monospace";
+
+@font-face {
+  font-family: 'Lato-Light';
+  src: local('Anonymous Pro Regular'), local('AnonymousPro-Regular'), url('../assets/fonts/anonymous_pro.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+

@@ -1,8 +1,8 @@
 import { Geoposition } from "@ionic-native/geolocation";
 
 export interface RunnerTracking {
-    uid: number;
+    uid: any;
     userName: string;
-    position: Geoposition;
+    position: any;
     available: boolean;
 }

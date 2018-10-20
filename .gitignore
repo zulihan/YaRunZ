@@ -29,9 +29,11 @@ plugins/android.json
 plugins/ios.json
 resources/android/icon
 resources/android/splash
+src/environments
 www/
 $RECYCLE.BIN/
 
 .DS_Store
 Thumbs.db
 UserInterfaceState.xcuserstate
+
