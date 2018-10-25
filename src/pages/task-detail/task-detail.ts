@@ -3,15 +3,19 @@ import { NavController, NavParams, Platform, ModalController, IonicPage, Navbar 
 
 import {style, state, animate, transition, trigger} from '@angular/animations';
 
-import { MapModalPage } from '../map-modal/map-modal';
+// import { MapModalPage } from '../map-modal/map-modal';
 
 import { AuthService } from '../../app/_services/auth.service';
 import { TasksService } from '../../app/_services/tasks.service';
 import { RunzService } from '../../app/_services/runz.service';
+import { GeoService } from '../../app/_services/geo.service';
 
 import { Runner } from '../../app/_models/runner';
 import { MapComponent } from '../../app/map/map.component';
-import { GeoService } from '../../app/_services/geo.service';
+
+import { TaskStatus, RunStatus, RunType } from "../../app/_enums/enums";
+import { environment } from '../../environments/environment'
+
     
 declare var google;
 
@@ -53,6 +57,9 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
   @ViewChild('map') map: MapComponent;
   @ViewChild('Navbar') navBar: Navbar;
 
+  FESTIVAL = environment.FESTIVAL;
+  public runType = RunType;
+  public runStatus = RunStatus;
   isAvailable;
   available: boolean;
   runner: Runner;
@@ -75,11 +82,12 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
 
   modalOpened = false;
 
-  legs = 2; 
+  run;
+  legs; 
 
   runnerPosition;
   directionsService;
-  calculatePercentageDoneInterval;
+  updatePositionInterval;
   totalDistance;
   updatedDistance;
   updatedDuration;
@@ -89,14 +97,30 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
   startConfirmValue;
   started = false;
 
-  OneOfTwoCompletedConfirmValue;
+  oneOfTwoCompletedConfirmValue;
   oneOfTwoCompleted = false;
 
   twoOfTwoStartedConfirmValue;
-  twoOfTwoStarted = false;
-
   twoOfTwoCompletedConfirmValue;
+  twoOfTwoStarted = false;
   twoOfTwoCompleted = false;
+  
+  // twoOfTwoCompleted = false;
+
+  oneOfThreeCompletedConfirmValue;
+  oneOfThreeCompleted = false;
+
+  twoOfThreeStarted = false;
+  twoOfThreeStartedConfirmValue
+  twoOfThreeCompletedConfirmValue;
+  twoOfThreeCompleted = false;
+
+  threeOfThreeStarted = false;
+  threeOfThreeStartedConfirmValue;
+  threeOfThreeCompletedConfirmValue;
+  // threeOfThreeCompleted = false; 
+
+  completed = false;
 
   confirmed = false;
 
@@ -109,7 +133,6 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
     value: 10,
     bufferValue: 100,
   }
-
 
   constructor(
     private platform: Platform,
@@ -129,39 +152,57 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
   }
 
   ngOnInit() {
-    console.log('********this params: **************', this.task);
-  if( this.isAvailable == undefined) this.isAvailable = this.available;
-  console.log('********ngOnInit() this.available: **************',  this.available);
+    console.log(' TaskDetailPage -> ngOnInit -> this.task', this.task);
+    if( this.isAvailable === undefined) this.isAvailable = this.available;
+    console.log(' TaskDetailPage -> ngOnInit -> this.available', this.available);
+    let runId = this.task.runId;
+    // this.run = this.runzService.getRun(runId);  
+    // this.checkTaskStatusUpdateView(this.task.status, this.task.type);
 }
 
   ngAfterViewInit() {
-    console.log('map_canvas: ', this.map_canvas);
-    this.checkTaskStatusUpdateView(this.task.status);
+    console.log(' TaskDetailPage -> ngAfterViewInit -> this.map_canvas', this.map_canvas);
     this.updateCTAText(this.task.status);
-    console.log('this.ctaElement.nativeElement: ', this.ctaElement); 
-    console.log('ngAfterViewInit() this map.initialDirections: ', this.map.initialDirections);
+    console.log(' TaskDetailPage -> ngAfterViewInit -> this.ctaElement', this.ctaElement);
+    console.log(' TaskDetailPage -> ngAfterViewInit -> this.map.initialDirections', this.map.initialDirections);
     // this.isAvailable = this.geoService.isAvailable;
-    console.log('this.isAvailable: ', this.isAvailable);    
+    console.log(' TaskDetailPage -> ngAfterViewInit -> this.isAvailable', this.isAvailable);
   }
 
   ionViewDidLoad() {
-  console.log('ionViewDidLoad() this.ctaText: ', this.ctaText);
-  console.log('ionViewDidLoad() this map.initialDirections: ', this.map.initialDirections);
+  console.log(' TaskDetailPage -> ionViewDidLoad -> this.ctaText', this.ctaText);
+  console.log(' TaskDetailPage -> ionViewDidLoad -> this.map.initialDirections', this.map.initialDirections);
   this.platform.ready().then( () => {  
-      console.log('ionViewDidLoad() this map.taskStatus: ', this.map.taskStatus);
-      console.log('ionViewDidLoad()2 this map.initialDirections: ', this.map.initialDirections);
-    
-      setTimeout( () => {
+      console.log(' TaskDetailPage -> ionViewDidLoad -> this.map.taskStatus', this.map.taskStatus);
+      console.log(' TaskDetailPage -> ionViewDidLoad -> this.map.initialDirections', this.map.initialDirections);
+      this.checkTaskStatusUpdateView(this.task.status, this.task.type);
+      if (this.updatePositionInterval) clearInterval(this.updatePositionInterval);
 
-        console.log('ionViewDidLoad()3 this map.initialDirections: ', this.map.initialDirections);                    
+      this.map.resolveRoute(this.task.status, this.task.type);
+      this.map.returnDirections(this.task.status, this.map.route);
+      this.updatePBValue(this.task.status);
+
+      setTimeout( () => {
+        
+        if (this.task.status === RunStatus.STARTED ||
+            this.task.status === RunStatus.ON_THE_WAY_BACK ||
+            this.task.status === RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION) {
+            this.updatePositionInterval = setInterval( () => {
+              console.log(' TaskDetailPage -> this.updatePositionInterval -> updatePositionInterval', this.updatePositionInterval);
+              this.map.resolveRoute(this.task.status, this.task.type);
+              this.map.returnDirections(this.task.status, this.map.route);
+              this.updatePBValue(this.task.status);
+            }, 30000);
+        }        
+        console.log(' TaskDetailPage -> ionViewDidLoad -> this.map.initialDirections', this.map.initialDirections);
       }, 2000)
     })
   }
 
   ionViewWillEnter() {
-    console.log('%%%%% is.Available %%%%%%: ', this.isAvailable);
+    console.log(' TaskDetailPage -> ionViewWillEnter -> this.isAvailable', this.isAvailable);
     this.geoService.getStatus().subscribe(rt => {
-      console.log('%%%%% is.Available %%%%%%: ', rt);
+      console.log(' TaskDetailPage -> ionViewWillEnter -> rt', rt);
       return this.isAvailable = rt.available;
     })
   }
@@ -169,175 +210,205 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
   ionViewDidEnter() {
     this.runnerPosition = this.map.runnerPosition;
     // this.totalDistance = ;
+    this.updatePBValue(this.task.status);    
+    console.log(' TaskDetailPage -> ionViewDidEnter -> this.updatePBValue');
   }
 
   ngAfterViewChecked() {
     if( this.task.status !== 'has completed') this.updateCTAText(this.ctaText);
-  }
-  
+  }  
 
-  checkTaskStatusUpdateView(status) {    
-    console.log('this.ctaText: ', this.ctaText);
+  ionViewWillLeave() {
+    console.log(' TaskDetailPage -> ionViewWillLeave -> this.updatePositionInterval', this.updatePositionInterval);
+  }
+
+  ionViewDidLeave() {
+    clearInterval(this.updatePositionInterval);
+  }
+
+  checkTaskStatusUpdateView(status, runType) {    
+    console.log('§§§§§§§§§§ TaskDetailPage -> checkTaskStatusUpdateView -> status', status);
+    console.log(' TaskDetailPage -> checkTaskStatusUpdateView -> this.ctaText', this.ctaText);
     this.ctaText = '';
     switch(status) {
-      case 'has not started yet':
+      case RunStatus.NOT_STARTED:
         this.started = false;
         this.pbOptions.value = 0;
         this.pbOptions.mode = 'indeterminate';
-        this.ctaText = 'START 1/2 ';        
+        this.ctaText = runType !== RunType.THREELEGS ? 'START 1/2 ' : 'START 1/3 ';        
         break;
-      case 'has started':
-        this.started = true;
+      case RunStatus.STARTED:
+        this.started = true;    
         this.pbOptions.value = 15;  // this.updatePBValue();
         this.pbOptions.mode = 'determinate';
-        this.task.status = 'has started';
-        this.task.taskStatus = 'ok';
-        this.ctaText = 'COMPLETE 1/2 ';        
+        this.task.status = RunStatus.STARTED;
+        this.task.taskStatus = TaskStatus.OK;
+        this.ctaText = runType !== RunType.THREELEGS ? 'COMPLETE 1/2 ': 'COMPLETE 1/3 ';        
         break;
-      case 'has arrived at destination':
+      case RunStatus.ARRIVED_AT_DESTINATION:
         this.started = true;
-        this.oneOfTwoCompleted = true;
+        if (runType !== RunType.THREELEGS) {
+          this.oneOfTwoCompleted = true;
+          console.log(' %%%%%%%%%%%%%%%%%%%%%% TaskDetailPage -> checkTaskStatusUpdateView -> this.oneOfTwoCompleted', this.oneOfTwoCompleted);
+        } else {
+          this.oneOfThreeCompleted = true;
+        };
         this.pbOptions.value = 100;
         this.pbOptions.mode = 'indeterminate';
-        this.task.status = 'has arrived at destination';
-        this.task.taskStatus = 'ok';
-        this.ctaText = 'START 2/2 ';
+        this.task.status = RunStatus.ARRIVED_AT_DESTINATION;
+        this.task.taskStatus = TaskStatus.OK;
+        this.ctaText = runType !== RunType.THREELEGS ? 'START 2/2 ': 'START 2/3 ';
         break;
-      case 'is on the way back':
+      
+      case RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION:
         this.started = true;
-        this.oneOfTwoCompleted = true;
-        this.twoOfTwoStarted = true;
+        this.oneOfThreeCompleted = true;
+        this.twoOfThreeStarted = true;
+        this.pbOptions.value = 100;
+        this.pbOptions.mode = 'indeterminate';
+        this.task.status = RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION;
+        this.task.taskStatus = TaskStatus.OK;
+        this.ctaText = 'COMPLETE 2/3 ';
+        break;
+      case RunStatus.ARRIVED_AT_SECOND_DESTINATION:
+        this.started = true;
+        this.oneOfThreeCompleted = true;
+        this.twoOfThreeStarted = true;
+        this.twoOfThreeCompleted = true;
+        this.pbOptions.value = 100;
+        this.pbOptions.mode = 'indeterminate';
+        this.task.status = RunStatus.ARRIVED_AT_SECOND_DESTINATION;
+        this.task.taskStatus = TaskStatus.OK;
+        this.ctaText = 'START 3/3 ';
+        break;      
+      case RunStatus.ON_THE_WAY_BACK:
+        this.started = true;
+        if (runType !== RunType.THREELEGS) {
+          this.oneOfTwoCompleted = true;
+          this.twoOfTwoStarted = true;
+        } else {
+          this.oneOfThreeCompleted = true;
+          this.twoOfThreeStarted = true;
+          this.twoOfThreeCompleted = true;
+          this.threeOfThreeStarted = true;
+        }        
         this.pbOptions.value = 5;
         this.pbOptions.mode = 'determinate';
-        this.task.status = 'is on the way back';
-        this.task.taskStatus = 'ok';
-        this.ctaText = 'COMPLETE 2/2 ';
+        this.task.status = RunStatus.ON_THE_WAY_BACK;
+        this.task.taskStatus = TaskStatus.OK;
+        this.ctaText = runType !== RunType.THREELEGS ? 'COMPLETE 2/2': 'COMPLETE 3/3';
         break;
-      case 'has completed':
+      case RunStatus.COMPLETED:
         this.started = true;
-        this.oneOfTwoCompleted = true;
-        this.twoOfTwoStarted = true;
-        this.twoOfTwoCompleted = true;
+        this.completed = true;
+        if (runType !== RunType.THREELEGS) {
+          this.oneOfTwoCompleted = true;
+          this.twoOfTwoStarted = true;
+        } else {
+          this.oneOfThreeCompleted = true;
+          this.twoOfThreeStarted = true;
+          this.twoOfThreeCompleted = true;
+          this.threeOfThreeStarted = true;
+        }
         this.pbOptions.value = 100;
+        console.log(' ^^^^^^^^^^^^^^^^^^^^^^^^TaskDetailPage -> checkTaskStatusUpdateView -> this.pbOptions.value', this.pbOptions.value);
         this.pbOptions.mode = 'determinate';
-        this.task.status = 'has completed';
-        this.task.taskStatus = 'ok';
+        this.task.status = RunStatus.COMPLETED;
+        this.task.taskStatus = TaskStatus.OK;
     }
-    console.log('this.ctaText: ', this.ctaText);   
+    console.log(' TaskDetailPage -> checkTaskStatusUpdateView -> this.ctaText', this.ctaText);
   }
 
   updateStatus(confirmValue, text?) {
-    console.log('this.started1: ', this.started) ;
-    console.log(confirmValue);
-    console.log(text);
+    console.log(' TaskDetailPage -> updateStatus -> this.started', this.started);
+    console.log(' TaskDetailPage -> updateStatus -> confirmValue', confirmValue);
+    console.log(' TaskDetailPage -> updateStatus -> text', text);
     // this.cursor = this.ctaElement.nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children[2];
     // this.activeBar = this.ctaElement.nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children[1];
     if (confirmValue >= 80) {      
       setTimeout( () => {
-        if (text === 'has completed') {
+        if (text === RunStatus.COMPLETED) {
           this.task.isDone = true;
         }
         this.isAvailable = true;
         this.task.updatedAt = new Date(Date.now()).getTime();
-        this.checkTaskStatusUpdateView(text);
+        this.checkTaskStatusUpdateView(text, this.task.type);
         this.updateDataAndView();
         // let rideData = this.returnRideData(text);
-        console.log('this.ctaText: ', this.ctaText);
-        // this.calculatePercentageDoneInterval = setInterval( () => {
-        //   this.calculatePercentageDone(this.runnerPosition, this.task.type)
-        // }, 2000);                    
-      }, 800);        
+        console.log('************* Refreshed ********** ');
+        
+        console.log(' TaskDetailPage -> updateStatus -> this.ctaText', this.ctaText);
+        if (this.updatePositionInterval) clearInterval(this.updatePositionInterval);
+        if( text !== RunStatus.COMPLETED) {
+          this.map.resolveRoute(this.task.status, this.task.type);
+          this.map.returnDirections(this.task.status, this.map.route);
+          setTimeout( () => {
+            this.updatePBValue(this.task.status);
+            console.log(' *****************TaskDetailPage -> updateStatus -> this.updatePBValue');
+          },2000)
+          this.updatePositionInterval = setInterval( () => {
+            console.log(' TaskDetailPage -> this.updatePositionInterval -> this.updatePositionInterval', this.updatePositionInterval);
+            this.map.resolveRoute(this.task.status, this.task.type);
+            this.map.returnDirections(this.task.status, this.map.route);
+            setTimeout( () => this.updatePBValue(this.task.status), 2000) 
+          }, 60000);
+        } else if (text === RunStatus.COMPLETED) {
+          clearInterval(this.updatePositionInterval);
+        }
+      }, 800);
     } else {
       setTimeout( () => {
         if (confirmValue > 0 && confirmValue < 80 ) {
           this.moveCursorAndActiveBarLeft();
         }
       },400);
-    }        
-    
+    }
   }
-  
 
   updateDataAndView() {
     this.tasksService.updateRunnerTask(this.task.id, this.task )
       .then( response => {
-        console.log('response from updateRunnerTask', response);
-        console.log('this.started: ', this.started); 
+        console.log(' TaskDetailPage -> updateDataAndView -> response', response);
+        console.log(' TaskDetailPage -> updateDataAndView -> this.started', this.started);
         this.geoService.updatePosition(this.isAvailable);                
         
-        if (!this.twoOfTwoCompleted) {
+        if (!this.completed) {
           setTimeout( () => {                 
             this.moveCursorAndActiveBarLeft(); 
             // this.updateCTAText(this.ctaText);                
-            this.map.resolveRoute(this.task.status);                                  
+            this.map.resolveRoute(this.task.status, this.task.type);                                  
             this.map.returnDirections(this.task.status, this.map.route);                                  
             this.map.displayRoute(this.map.directions);                                  
           },200);
           setTimeout( () => {
-            console.log('this.rideData: ', this.map.rideData);         
-            console.log('this.rideData: ', this.rideData);              
+            console.log(' TaskDetailPage -> updateDataAndView -> this.map.rideData', this.map.rideData);
+            console.log(' TaskDetailPage -> updateDataAndView -> this.rideData', this.rideData);
             if(this.rideData === undefined) {
               this.rideData = this.map.rideData;
-              this.runzService.updateRun(this.rideData);
+              this.runzService.updateRun(this.map.runId, this.rideData);
               this.rideData = undefined;
-            }                  
+            }
           },1500);
-        }
-        
+        }        
         // if (text === 'has started') {
         //   this.runzService.runInit(this.legs, this.task)
         //   .then( response => console.log('response from runzService.runInit: ', response));
         // };                      
       });
     
-    console.log('this legs :', this.legs);
+    console.log(' TaskDetailPage -> updateDataAndView -> this.legs', this.legs);
   }
 
-  // calculatePercentageDone(position, taskType) {
-  //   this.runnerPosition = this.map.runnerPosition;
-  //   let route = {};
-  //   let distance;
-  //   let duration;
-  //   if (taskType === 'drop off' && this.task.status === 'has started') {
-  //     distance = this.rideData.legs.one.distance;
-  //     duration = this.rideData.legs.one.duration;        
-  //     route = {
-  //       origin: this.runnerPosition,
-  //       destination: new google.maps.LatLng(this.task.to.coord.latitude, this.task.to.coord.longitude),          
-  //       travelMode: 'DRIVING'
-  //     };
-  //   } else if (taskType === 'drop off' && this.task.status === 'is on the way back') {
-  //     distance = this.rideData.legs.two.distance;
-  //     duration = this.rideData.legs.two.duration;        
-  //     route = {
-  //       origin: this.runnerPosition,
-  //       destination: new google.maps.LatLng(this.task.from.coord.latitude, this.task.from.coord.longitude),          
-  //       travelMode: 'DRIVING'
-  //     };
-  //   }
-  //   this.directionsService.route(route,
-  //     (response, status) => {
-  //       if (status === 'OK') {
-  //         console.log("response from this.directionsService.route: ", response);        
-  //         this.updatedDistance = response.routes[0].legs[0].distance;
-  //         this.updatedDuration = response.routes[0].legs[0].duration;
-  //         this.percentageDone = (( distance - this.updatedDistance ) * 100) / distance;
-  //         this.totalPercentageDone = (( distance - this.updatedDistance ) * 100) / this.totalDistance;
-  //         let updatedRideData = {
-  //           "percent_dist_travelled": this.percentageDone / 2,
-  //           "legs.one": {
-  //             "percent_dist_travelled": this.percentageDone
-  //           }
-  //         }
-  //       } else {
-  //         window.alert('Directions request failed due to ' + status);
-  //       }
-  //     })
-  // }
-
-  updatePBValue(): number {
-    // this.pbOptions.value = ;
-    return 5;
+  updatePBValue(taskStatus) {
+    if (taskStatus === RunStatus.STARTED || taskStatus === RunStatus.ARRIVED_AT_DESTINATION) {
+      this.pbOptions.value = this.map.legOnePercentageDistanceTravelled;
+      console.log(' TaskDetailPage -> updatePBValue -> this.pbOptions.value', this.pbOptions.value);
+    } else if (taskStatus === RunStatus.ON_THE_WAY_BACK) {
+      this.pbOptions.value = this.map.legTwoPercentageDistanceTravelled;
+      console.log(' TaskDetailPage -> updatePBValue -> this.pbOptions.value', this.pbOptions.value);
+    } else if ( taskStatus === RunStatus.COMPLETED) {
+      this.pbOptions.value = 100;
+    } 
   }
 
   updateCTAText(text) {
@@ -352,90 +423,9 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
     this.cursorMoveLeft = true;
     this.cursor.style.left = '0%';
     this.activeBar.style.right = '100%';
-    console.log('this.cursor: ', this.cursor);
-    console.log('this.cursor.style.left: ', this.cursor.style.left);
-    console.log('this.activeBar.style.right: ', this.activeBar.style.right);
+    console.log(' TaskDetailPage -> moveCursorAndActiveBarLeft -> this.cursor', this.cursor);
+    console.log(' TaskDetailPage -> moveCursorAndActiveBarLeft -> this.cursor.style.left', this.cursor.style.left);
+    console.log(' TaskDetailPage -> moveCursorAndActiveBarLeft -> this.activeBar.style.right', this.activeBar.style.right);
   }
-
   
 }
-
-
-  // ctaUpdateStatus() {
-  //   console.log('this.ctaElement: ', this.ctaElement);
-  //   console.log('after view Init');
-  //   this.cursor = this.ctaElement.nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children[2];
-  //   this.activeBar = this.ctaElement.nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children[1];
-  //   this.ctaText = this.ctaElement.nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children["0"];
-    
-  //   switch(this.task.status) {
-  //     case 'has not started yet':
-  //       this.ctaText.textContent = 'START';      
-  //       console.log('this cursor: ', this.cursor);
-  //       break;
-  //     case 'has started':
-  //       this.ctaText.textContent = 'COMPLETE 1/2 ';
-  //       break;
-  //     case 'has arrived at destination':
-  //       this.ctaText.textContent = 'START 2/2 ';
-  //       break;
-  //     case 'is on the way back':
-  //       this.ctaText.textContent = 'COMPLETE 2/2 ';            
-  //   }    
-  //   this.map.calculateAndDisplayRoute(this.task.status);
-  // }
-
-  
-
-
-// updateStatus(confirmValue, text) {
-     
-//   console.log(confirmValue);
-//   console.log(text);
-//   this.cursor = this.ctaElement.nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children[2];
-//   this.activeBar = this.ctaElement.nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children[1];
-//   if (confirmValue >= 80) {
-//     let ctaText = '';
-//     switch(text) {
-//       case 'has started':
-//       this.task.status = 'has started';
-//       this.task.taskStatus = 'ok';
-//       ctaText = 'COMPLETE 1/2 ';
-//       this.started = true;      
-//       break;
-//       case 'has arrived at destination':
-//       this.task.status = 'has started';
-//       this.task.taskStatus = 'ok';
-//       ctaText = 'START 2/2 ';
-//       break;
-//       case 'is on the way back':
-//       this.task.status = 'COMPLETE 2/2';
-//       this.task.taskStatus = 'ok';               
-//     }
-//       this.task.updatedAt = new Date(Date.now()).getTime();
-//       setTimeout( () => {        
-//         this.tasksService.updateRunnerTask(this.task.id, this.task );
-//         console.log('this legs :', this.legs);
-//         if (text === 'has started') this.runzService.runInit(this.legs, this.task)
-//           .then( response => console.log(response));
-//         this.map.calculateAndDisplayRoute(this.task.status);
-//         setTimeout( () => {
-//           console.log('this.ctaElement from updateOneOfTwoStartedConfirmValue :', this.ctaElement.nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children["0"]);
-//           this.updateCTAText(ctaText);
-//         },200);
-//         this.moveCursorAndActiveBarLeft();
-//       }, 800)
-    
-//     setTimeout( () => console.log('this.started: ', this.started), 1200 );
-//   } 
-
-//   setTimeout( () => {
-//     if (confirmValue > 0 && confirmValue < 80 ) {
-//       this.moveCursorAndActiveBarLeft();
-//     }
-//   },
-//   400)      
-  
-// }
-
-

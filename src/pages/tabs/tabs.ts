@@ -13,7 +13,5 @@ export class TabsPage {
   tab2Root = MapPage;
   tab3Root = ContactPage;
 
-  constructor() {
-
-  }
+  constructor() {}
 }

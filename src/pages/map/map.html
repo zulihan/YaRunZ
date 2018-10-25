@@ -5,18 +5,15 @@
   Ionic pages and navigation.
 -->
 <ion-header>
-
   <ion-navbar>
     <ion-title>
       <span>map</span>
       <button class="refresher" side="right" [@rotation]="state" (click)="map.doRefresh(state); doRefresh(state)">
-          <ion-icon name="refresh" color="light"></ion-icon>
+        <ion-icon name="refresh" color="light"></ion-icon>
       </button>
     </ion-title>    
   </ion-navbar>
-
 </ion-header>
-
 <ion-content>     
     <app-map #map [mapConfig]="mapConfig"></app-map>
 </ion-content>

@@ -17,24 +17,24 @@
     </ion-refresher-content>
   </ion-refresher>
     <ion-list>        
-      <ion-list-header>
-          <!-- <ion-avatar item-start>
-              <img src="{{ runner?.photoUrl }}">
-            </ion-avatar>
-            <h2> Wass'up {{ runner?.userName | titlecase }} yo?</h2> -->
-            <ion-label *ngIf="!isAvailable; else avlbl">You're not available yo ?</ion-label>
-          <ng-template #avlbl>
-            <ion-label>You're available</ion-label>
-          </ng-template>
-          <ion-toggle [(ngModel)]="isAvailable" (ionChange)="updateAvailable($event)" color="secondary"></ion-toggle>
-       </ion-list-header>      
+      <ion-item>
+        <!-- <ion-avatar item-start>
+            <img src="{{ runner?.photoUrl }}">
+          </ion-avatar>
+          <h2> Wass'up {{ runner?.userName | titlecase }} yo?</h2> -->
+        <ion-label class="textAlignRight" *ngIf="!isAvailable; else avlbl">Activate geolocation ?</ion-label>
+        <ng-template #avlbl>
+          <ion-label class="textAlignRight">Your position is tracked</ion-label>
+        </ng-template>
+        <ion-toggle [(ngModel)]="isAvailable" (ionChange)="updateAvailable($event)" color="secondary"></ion-toggle>
+      </ion-item>      
       <!-- <ion-item>
           <ion-icon name="car" item-start></ion-icon>
           Your Runs
       </ion-item>     -->
-    </ion-list>
-    <ng-container *ngIf="tasks.length !== 0; else noTasks">
-      <ion-list *ngFor="let task of tasks">      
+    
+    <ng-container *ngIf="tasks.length !== 0; else noTasks">            
+      <ion-item *ngFor="let task of tasks">
         <button ion-item (click)="buttonClick(task)">
           <ion-grid>
             <ion-row>
@@ -58,14 +58,11 @@
                   </ion-list>
               </ion-col>              
             </ion-row>            
-          </ion-grid>       
-          
+          </ion-grid>          
         </button>
-        <ion-item>
-          
-        </ion-item>
-      </ion-list>      
-    </ng-container>    
+      </ion-item>
+    </ng-container> 
+  </ion-list>   
     <ng-template #noTasks>
       <ion-list>
         <ion-item item-center>

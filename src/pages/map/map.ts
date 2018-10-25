@@ -13,13 +13,6 @@ import {
 import { IonicPage, NavController, NavParams } from 'ionic-angular';
 
 
-/**
- * Generated class for the MapPage page.
- *
- * See https://ionicframework.com/docs/components/#navigation for more info on
- * Ionic pages and navigation.
- */
-
 @IonicPage()
 @Component({
   selector: 'page-map',
@@ -52,7 +45,7 @@ export class MapPage implements OnInit, AfterViewInit {
   }
 
   ionViewDidLoad() {    
-    console.log('ionViewDidLoad MapPage');    
+    console.log(' MapPage -> ionViewDidLoad -> ionViewDidLoad');
   }
 
   ngAfterViewInit() {}  
@@ -60,7 +53,7 @@ export class MapPage implements OnInit, AfterViewInit {
   doRefresh(state) {
     state === 'normal' ? this.state = 'rotated' : this.state = 'normal';
     setTimeout( () => this.state = 'normal', 1000);
-    console.log('this.state: ', this.state);
+    console.log(' MapPage -> doRefresh -> this.state', this.state);
   }
 
 }

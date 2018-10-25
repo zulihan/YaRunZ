@@ -21,10 +21,10 @@ export class GeoService {
     runnerTracking: Observable<RunnerTracking>;
     // runnersTrackingCollection: AngularFirestoreCollection<RunnerTracking>;
 
-    posOptions = {timeout: 3000, enableHighAccuracy: true};
+    posOptions = {timeout: 7000, enableHighAccuracy: true};
     watch: Observable<Position>;
     watchSubscription: Subscription;
-    watchOptions = {timeout : 3000, enableHighAccuracy: true};
+    watchOptions = {timeout : 7000, enableHighAccuracy: true};
     runnerPosition;
     runnerPositionSubj = new BehaviorSubject<Geoposition>(this.runnerPosition);
     runnerPosObs = this.runnerPositionSubj.asObservable();
@@ -56,11 +56,13 @@ export class GeoService {
     }
     
     getPosition() {
-        this.geolocation.getCurrentPosition(this.posOptions).then((resp) => {
-            console.log('response from getCurrentPosition: ', resp)
-            this.runnerPosition = resp;
-            this.runnerPositionSubj.next(this.runnerPosition);
-            }).catch((error) => {
+        this.geolocation.getCurrentPosition(this.posOptions)
+            .then((resp) => {
+                console.log(' GeoService -> getPosition -> resp', resp);
+                this.runnerPosition = resp;
+                this.runnerPositionSubj.next(this.runnerPosition);
+            })
+            .catch((error) => {
                 console.log('Error getting location', error);
             });
     }
@@ -70,13 +72,13 @@ export class GeoService {
         this.watchSubscription = this.watch
         .pipe(filter( (p) => p.coords !== undefined))
         .subscribe((position) => {
-            console.log('response from watchPosition', position);
+            console.log(' GeoService -> watchPosition -> position', position);
             this.runnerPosition = position;
             this.runnerPositionSubj.next(this.runnerPosition);
-            console.log('this.runnerPosition', this.runnerPosition);            
+            console.log(' GeoService -> watchPosition -> this.runnerPosition', this.runnerPosition);
             },
-            (error) => console.log(error)
-        );        
+            (error) => console.log(' GeoService -> watchPosition -> error', error)
+        );
     }
 
     
@@ -91,7 +93,6 @@ export class GeoService {
                 },
                 timestamp: this.runnerPosition.timestamp
             }
-            
             positionUpdated = {
                 available,
                 position,
@@ -110,7 +111,7 @@ export class GeoService {
     }
 
     getStatus(): Observable<RunnerTracking> {        
-        console.log('this runner tasks: ', this.runnerTracking)
+        console.log(' GeoService -> this.runnerTracking', this.runnerTracking);
         return this.runnerTracking;      
 
     }    

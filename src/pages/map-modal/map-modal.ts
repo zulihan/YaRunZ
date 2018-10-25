@@ -22,19 +22,18 @@ export class MapModalPage {
 
   constructor(private navParams: NavParams, private view: ViewController) {
     this.template = this.navParams.get('template');
-    // this.taskLocationsModal = this.navParams.get('locations');
-    
+    // this.taskLocationsModal = this.navParams.get('locations');  
   }
 
   ionViewWillLoad() {
-    console.log('ionViewDidLoad MapModalPage');
+    console.log(' MapModalPage -> ionViewWillLoad -> ionViewWillLoad');
     
-    // console.log('this.inputTemplate: ', this.inputTemplate);
-    // console.log('this mapcomponent: ', this.template.directionsDisplay);
-    console.log('this.navParams: ', this.navParams);
-    console.log('this template: ', this.template);
+    // console.log(' MapModalPage -> ionViewWillLoad -> this.inputTemplate', this.inputTemplate);
+    // console.log(' MapModalPage -> ionViewWillLoad -> this.template.directionsDisplay', this.template.directionsDisplay);
+    console.log(' MapModalPage -> ionViewWillLoad -> this.navParams', this.navParams);
+    console.log(' MapModalPage -> ionViewWillLoad -> this.template', this.template);
 
-    // console.log('this.taskLocationsModal: ', this.taskLocationsModal);
+    // console.log(' MapModalPage -> ionViewWillLoad -> this.taskLocationsModal', this.taskLocationsModal);
     this.mapElement.createEmbeddedView(this.template);
   }
 

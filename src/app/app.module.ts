@@ -10,7 +10,7 @@ import { SplashScreen } from '@ionic-native/splash-screen';
 import { StatusBar } from '@ionic-native/status-bar';
 import { Geolocation } from '@ionic-native/geolocation';
 import  { IonicStorageModule} from '@ionic/storage';
-import { GoogleMaps, GoogleMap } from '@ionic-native/google-maps';
+import { GoogleMaps } from '@ionic-native/google-maps';
 
 import { HTTP } from '@ionic-native/http';
 

@@ -29,7 +29,8 @@ plugins/android.json
 plugins/ios.json
 resources/android/icon
 resources/android/splash
-src/environments
+src/environments/environment.ts
+environments/
 www/
 $RECYCLE.BIN/
 

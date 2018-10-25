@@ -1,5 +1,9 @@
 page-home {
 
+    .textAlignRight {
+        text-align: right;
+    }
+
     .toggle-md .toggle-icon {
         background-color: map-get($colors, primary);        
     }

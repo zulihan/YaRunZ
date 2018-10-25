@@ -1,332 +1,322 @@
 <ion-header>
-    <ion-navbar #NavBar color="primary">
-      <ion-title>
-        Ya RuN
-      </ion-title>
-    </ion-navbar>
-  </ion-header>
+  <ion-navbar #NavBar color="primary">
+    <ion-title>
+      Ya RuN
+    </ion-title>
+  </ion-navbar>
+</ion-header>
 
-<ion-content>  
-    <ion-list>        
-      <ion-list-header>
-          <ion-item>
-              <div class="header-item">
-                <ion-icon name="alarm" class="icon-big"></ion-icon>
-                <div class="date-time">
-                  <h1>{{ task.startAt | date: 'hh:mm' }}</h1>
-                  <p>{{ task.startAt | date: 'dd/MM' }}</p>
-                </div>
-              </div>
-              <div class="header-item">
-                <ion-icon name="people" class="icon-big"></ion-icon>
-                <div>
-                    <h1>{{ task.pers}} pers.</h1>
-                    <p> {{ task.artist.name | titlecase}}</p>
-                </div>
-              </div>
-          </ion-item>
-       </ion-list-header>      
-         
-    </ion-list>    
-      <ion-list>              
-          <ion-grid>              
-            <ion-row>
-              <ion-col col-5>
-                <div class="route-location" *ngIf="!started || !oneOfTwoCompleted; else partTwoOrigin">
-                  <p>{{ task.from.name }}</p>
-                </div>
-                <ng-template #partTwoOrigin>
-                    <div class="route-location">
-                      <p>{{ task.to.name }}</p>
-                    </div>
-                </ng-template>                    
-              </ion-col>
-              <ion-col col-2>
-                <div class="direction-arrow">></div>
-              </ion-col>   
-              <ion-col col-5>
-                <div class="route-location" *ngIf="!started || !oneOfTwoCompleted; else partTwoDestination">
-                  <p>{{ task.to.name }}</p>
-                </div>                    
-                </ion-col> 
-                <ng-template #partTwoDestination>
-                    <div class="route-location">
-                      <p>{{ task.from.name }}</p>
-                    </div>
-                </ng-template>          
-            </ion-row>
-            <ion-row>
-              <ion-col col-2></ion-col>
-              <ion-col col-8>
-                  <div class="route-progress-section">
-                      <ion-icon name="pin"></ion-icon>
-                      <!-- <progress-bar [progress]="100" [color]="'#488aff'">
-                      </progress-bar> -->
-                    <mat-progress-bar class="route-progress-margin"
-                      class="progress-bar-margin"
-                      [color]="pbOptions.color"
-                      [mode]="pbOptions.mode"
-                      [value]="pbOptions.value"
-                      [bufferValue]="pbOptions.bufferValue">
-                    </mat-progress-bar>
-                    <ion-icon name="pin"></ion-icon>
-                  </div>
-              </ion-col>
-              <ion-col col-2></ion-col>
-            </ion-row>
-            <ion-row>
-              <ion-col col-2>
+<ion-content>
+  <ion-list>
+    <ion-list-header>
+      <ion-item>
+        <div class="header-item">
+          <ion-icon name="alarm" class="icon-big"></ion-icon>
+          <div class="date-time">
+            <h1>{{ task.startAt | date: 'hh:mm' }}</h1>
+            <p>{{ task.startAt | date: 'dd/MM' }}</p>
+          </div>
+        </div>
+        <div class="header-item">
+          <ion-icon name="people" class="icon-big"></ion-icon>
+          <div>
+            <h1>{{ task.pers}} pers.</h1>
+            <p> {{ task.artist.name | titlecase}}</p>
+          </div>
+        </div>
+      </ion-item>
+    </ion-list-header>      
+  </ion-list>    
+  <ion-list> 
+    {{ task.type }} /  {{ task.status }} {{ started }} {{ oneOfTwoCompleted }}  {{ twoOfTwoStarted }}         
+    <ion-grid>              
+      <ion-row>
+        <ion-col col-5>
+          <div class="route-location" 
+            *ngIf="task.type === runType.DROPOFF && !started">
+            <p>{{ task.from.name }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.DROPOFF && started && !oneOfTwoCompleted">
+            <p>{{ task.from.name }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.DROPOFF && (oneOfTwoCompleted || twoOfTwoStarted)">
+            <p>{{ task.to.name }}</p>
+          </div>
 
-              </ion-col>
-                <ion-col col-8>
-                  <ion-list *ngIf="task.legs.length == 2 ; else threeLegs" #ctaList>
-                    
-                    <ion-item *ngIf="!started" >                      
-                      <ion-range
-                        #cursorMoveLeft 
-                        [(ngModel)]="startConfirmValue"
-                        color="secondary"
-                        debounce="200"
-                        step="5"
-                        (ionChange)="updateStatus(startConfirmValue, 'has started')" >
-                      </ion-range>                       
-                    </ion-item>
-  
-                    <ion-item *ngIf="started && !oneOfTwoCompleted">                      
-                      
-                        <ion-range
-                          #cursorMoveLeft 
-                          [(ngModel)]="OneOfTwoCompletedConfirmValue"
-                          color="secondary"
-                          debounce="200"
-                          step="5"
-                          (ionChange)="updateStatus(OneOfTwoCompletedConfirmValue, 'has arrived at destination')" >
-                        </ion-range>
-                      
-                    </ion-item>
-                      <ion-item *ngIf="oneOfTwoCompleted && !twoOfTwoStarted">
-                        
-                          <ion-range                            
-                          [(ngModel)]="twoOfTwoStartedConfirmValue"
-                          color="secondary"
-                          debounce="200"
-                          step="5"
-                          (ionChange)="updateStatus(twoOfTwoStartedConfirmValue, 'is on the way back')" >
-                        </ion-range>
-                        
-                      </ion-item> 
-                                          
-                      <ion-item *ngIf="twoOfTwoStarted && !twoOfTwoCompleted" >
-                        
-                          <ion-range 
-                            [(ngModel)]="twoOfTwoCompletedConfirmValue"
-                            color="secondary"
-                            debounce="200"
-                            step="5"
-                            (ionChange)="updateStatus(twoOfTwoCompletedConfirmValue, 'has completed')" >
-                          </ion-range>
-                      </ion-item>                 
-                      <ion-item *ngIf="twoOfTwoCompleted" >
-                          <ion-label [@enterAnimation]>
-                              <p>RUN COMPLETED !</p>
-                              <p>CONGRATS !</p>
-                              <p>THANKS !</p> 
-                          </ion-label>
-                          
-                      </ion-item>
-                    
-                  </ion-list>
-                  <ng-template #threeLegs>
-  
-                  </ng-template>
-                </ion-col>
-                <ion-col col-2>
+          <div class="route-location"
+            *ngIf="task.type === runType.PICKUP && !started">
+            <p>{{ task.to.name }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.PICKUP && started && !oneOfTwoCompleted">
+            <p>{{ task.to.name }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.PICKUP && oneOfTwoCompleted">
+            <p>{{ task.from.name }}</p>
+          </div>
+
+          <div class="route-location"
+            *ngIf="task.type === runType.THREELEGS && !started">
+            <p>{{ FESTIVAL.NAME }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.THREELEGS && started && !oneOfThreeCompleted">
+            <p>{{ FESTIVAL.NAME }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.THREELEGS && oneOfThreeCompleted">
+            <p>{{ task.from.name }}</p>
+          </div>  
+          <div class="route-location"
+            *ngIf="task.type === runType.THREELEGS && twoOfThreeCompleted">
+            <p>{{ task.to.name }}</p>
+          </div>
+        </ion-col>
+        <ion-col col-2>
+          <div class="direction-arrow">></div>
+        </ion-col>   
+
+        <ion-col col-5>
+
+          <div class="route-location" 
+            *ngIf="task.type === runType.DROPOFF && !started">
+            <p>{{ task.to.name }}</p>
+          </div>          
+          <div class="route-location"
+            *ngIf="task.type === runType.DROPOFF && started && !oneOfTwoCompleted">
+            <p>{{ task.to.name }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.DROPOFF && (oneOfTwoCompleted || twoOfTwoStarted)">
+            <p>{{ task.from.name }}</p>
+          </div>
+
+          <div class="route-location"
+            *ngIf="task.type === runType.PICKUP && !started">
+            <p>{{ task.from.name }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.PICKUP && started && !oneOfTwoCompleted">
+            <p>{{ task.from.name }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.PICKUP && oneOfTwoCompleted">
+            <p>{{ task.to.name }}</p>
+          </div>
+
+          <div class="route-location"
+            *ngIf="task.type === runType.THREELEGS && !started">
+            <p>{{ task.from.name }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.THREELEGS && started && !oneOfThreeCompleted">
+            <p>{{ task.from.name }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.THREELEGS && oneOfThreeCompleted">
+            <p>{{ task.to.name }}</p>
+          </div>
+          <div class="route-location"
+            *ngIf="task.type === runType.THREELEGS && twoOfThreeCompleted">
+            <p>{{ FESTIVAL.NAME }}</p>
+          </div>          
+
+        </ion-col>
+      </ion-row>
+      <ion-row>
+        <ion-col col-2>            
+        </ion-col>
+        <ion-col col-8>
+          <div class="route-progress-section">
+            <ion-icon name="pin"></ion-icon>
+            <!-- <progress-bar [progress]="100" [color]="'#488aff'">
+            </progress-bar> -->
+            <mat-progress-bar class="route-progress-margin"
+              class="progress-bar-margin"
+              [color]="pbOptions.color"
+              [mode]="pbOptions.mode"
+              [value]="pbOptions.value"
+              [bufferValue]="pbOptions.bufferValue">
+            </mat-progress-bar>
+            <ion-icon name="pin"></ion-icon>
+          </div>
+        </ion-col>
+        <ion-col col-2>
+        </ion-col>
+      </ion-row>
+      <!-- Range Button -->
+      <ion-row>
+        <ion-col col-2>
+        </ion-col>
+        {{ !started && !completed }} {{ started && !oneOfTwoCompleted }} {{ oneOfTwoCompleted && !twoOfTwoStarted }} {{ twoOfTwoStarted && !twoOfTwoCompleted }} {{ twoOfTwoCompleted }}
+        <ion-col col-8>
+          <ion-list *ngIf="task.type !== runType.THREELEGS; else threeLegs" #ctaList>        
+            <ion-item *ngIf="!started && !completed" >                      
+              <ion-range
+                #cursorMoveLeft 
+                [(ngModel)]="startConfirmValue"
+                color="secondary"
+                debounce="200"
+                step="5"
+                (ionChange)="updateStatus(startConfirmValue, runStatus.STARTED)" >
+              </ion-range>                       
+            </ion-item>
+
+            <ion-item *ngIf="started && !oneOfTwoCompleted">
+              <ion-range
+                #cursorMoveLeft 
+                [(ngModel)]="oneOfTwoCompletedConfirmValue"
+                color="secondary"
+                debounce="200"
+                step="5"
+                (ionChange)="updateStatus(oneOfTwoCompletedConfirmValue, runStatus.ARRIVED_AT_DESTINATION)" >
+              </ion-range>
               
-                </ion-col>
-            </ion-row>
-            <ion-row>
-              <ion-col class="map-container">
-                  <!-- <div *ngIf="modalOpened">
-                    {{ modalOpened }}
-                    <page-map-modal [inputTemplate]="myTemplate"></page-map-modal>
-                  </div> -->
-                <div #myTemplate class="map_wrapper">
-                  <app-map #map
-                    [taskLocations]="taskLocations"
-                    [taskStatus]="task.status"
-                    [taskType]="task.type"
-                  >
-                  </app-map>
-                </div>
-              </ion-col>
-            </ion-row>
-            <ion-row>
-              
+            </ion-item>
+              <ion-item *ngIf="oneOfTwoCompleted && !twoOfTwoStarted">
+                <ion-range                            
+                [(ngModel)]="twoOfTwoStartedConfirmValue"
+                color="secondary"
+                debounce="200"
+                step="5"
+                (ionChange)="updateStatus(twoOfTwoStartedConfirmValue, runStatus.ON_THE_WAY_BACK)" >
+              </ion-range>                  
+            </ion-item> 
+                                  
+            <ion-item *ngIf="twoOfTwoStarted && !completed" >
+              <ion-range 
+                [(ngModel)]="twoOfTwoCompletedConfirmValue"
+                color="secondary"
+                debounce="200"
+                step="5"
+                (ionChange)="updateStatus(twoOfTwoCompletedConfirmValue, runStatus.COMPLETED)" >
+              </ion-range>
+              </ion-item>                 
+            <ion-item *ngIf="completed" >
+              <ion-label [@enterAnimation]>
+                <p>RUN COMPLETED !</p>
+                <p>CONGRATS !</p>
+                <p>THANKS !</p> 
+              </ion-label>                    
+            </ion-item>              
+          </ion-list>
+          <ng-template #threeLegs>
+            <ion-list>
+              <ion-item *ngIf="!started">                      
+                <ion-range
+                  #cursorMoveLeft 
+                  [(ngModel)]="startConfirmValue"
+                  color="secondary"
+                  debounce="200"
+                  step="5"
+                  (ionChange)="updateStatus(startConfirmValue, runStatus.STARTED)" >
+                </ion-range>                       
+              </ion-item>    
+              <ion-item *ngIf="started && !oneOfThreeCompleted">
+                <ion-range
+                  #cursorMoveLeft 
+                  [(ngModel)]="oneOfThreeCompletedConfirmValue"
+                  color="secondary"
+                  debounce="200"
+                  step="5"
+                  (ionChange)="updateStatus(oneOfThreeCompletedConfirmValue, runStatus.ARRIVED_AT_DESTINATION)" >
+                </ion-range>                
+              </ion-item>
+              <ion-item *ngIf="oneOfThreeCompleted && !twoOfThreeStarted">
+                <ion-range                            
+                [(ngModel)]="twoOfThreeStartedConfirmValue"
+                color="secondary"
+                debounce="200"
+                step="5"
+                (ionChange)="updateStatus(twoOfTwoStartedConfirmValue, runStatus.ON_THE_WAY_TO_SECOND_DESTINATION)" >
+                </ion-range>                  
+              </ion-item> 
+                                    
+              <ion-item *ngIf="twoOfThreeStarted && !twoOfThreeCompleted" >
+                <ion-range 
+                  [(ngModel)]="twoOfThreeCompletedConfirmValue"
+                  color="secondary"
+                  debounce="200"
+                  step="5"
+                  (ionChange)="updateStatus(twoOfThreeCompletedConfirmValue, runStatus.ARRIVED_AT_SECOND_DESTINATION)" >
+                </ion-range>
+              </ion-item>
 
-            </ion-row>
-            <!-- <ion-row>
-              <ion-col col-2>                  
-              </ion-col>
-              <ion-col col-8> 
-                  <ion-label *ngIf="!started && !oneOfTwoCompleted" [@enterAnimation]>
-                      Start 1 of 2
-                    </ion-label>
-                    <ion-label *ngIf="started && !oneOfTwoCompleted " [@enterAnimation]>
-                        complete 1 of 2
-                      </ion-label>
-                      <ion-label *ngIf="oneOfTwoCompleted && !twoOfTwoStarted" [@enterAnimation]>
-                          start 2 of 2
-                      </ion-label>
-                      <ion-label *ngIf="twoOfTwoStarted && !twoOfTwoCompleted" [@enterAnimation]>
-                          complete 2 of 2
-                      </ion-label>
-                       <ion-label *ngIf="twoOfTwoCompleted" [@enterAnimation]>
-                          RUN COMPLETED !
-                      </ion-label>
-              </ion-col>
-              <ion-col col-2>                  
-              </ion-col>            
-                                            
-            </ion-row> -->
-          </ion-grid>      
-          
-        
-        <ion-item>
-          
-        </ion-item>
-      </ion-list>      
-    
+              <ion-item *ngIf="twoOfThreeCompleted && !threeOfThreeStarted" >
+                <ion-range 
+                  [(ngModel)]="threeOfThreeStartedConfirmValue"
+                  color="secondary"
+                  debounce="200"
+                  step="5"
+                  (ionChange)="updateStatus(threeOfThreeStartedConfirmValue, runStatus.ON_THE_WAY_BACK)" >
+                </ion-range>
+              </ion-item>
+              <ion-item *ngIf="threeOfThreeStarted && !completed" >
+                <ion-range 
+                  [(ngModel)]="threeOfThreeCompletedConfirmValue"
+                  color="secondary"
+                  debounce="200"
+                  step="5"
+                  (ionChange)="updateStatus(threeOfThreeCompletedConfirmValue, runStatus.COMPLETED)" >
+                </ion-range>
+              </ion-item>
+              <ion-item *ngIf="completed" >
+                <ion-label [@enterAnimation]>
+                  <p>RUN COMPLETED !</p>
+                  <p>CONGRATS !</p>
+                  <p>THANKS !</p> 
+                </ion-label>                    
+              </ion-item>              
+            </ion-list>
+          </ng-template>
+        </ion-col>
+          <!-- En of Range Button -->
+        <ion-col col-2>            
+        </ion-col>
+      </ion-row>
+      <ion-row>
+            <ion-col class="map-container">
+              <!-- <div *ngIf="modalOpened">
+                {{ modalOpened }}
+                <page-map-modal [inputTemplate]="myTemplate"></page-map-modal>
+              </div> -->
+              <div #myTemplate class="map_wrapper">
+                <app-map #map
+                  [mapConfig]="mapConfig"
+                  [taskLocations]="taskLocations"
+                  [taskStatus]="task.status"
+                  [taskType]="task.type"
+                  [runId]="task.runId">
+                </app-map>
+              </div>
+            </ion-col>
+      </ion-row>          
+          <!-- <ion-row>
+            <ion-col col-2>                  
+            </ion-col>
+            <ion-col col-8> 
+              <ion-label *ngIf="!started && !oneOfTwoCompleted" [@enterAnimation]>
+                  Start 1 of 2
+              </ion-label>
+              <ion-label *ngIf="started && !oneOfTwoCompleted " [@enterAnimation]>
+                  complete 1 of 2
+              </ion-label>
+              <ion-label *ngIf="oneOfTwoCompleted && !twoOfTwoStarted" [@enterAnimation]>
+                start 2 of 2
+              </ion-label>
+              <ion-label *ngIf="twoOfTwoStarted && !twoOfTwoCompleted" [@enterAnimation]>
+                complete 2 of 2
+              </ion-label>
+                <ion-label *ngIf="twoOfTwoCompleted" [@enterAnimation]>
+                  RUN COMPLETED !
+              </ion-label>
+            </ion-col>
+            <ion-col col-2>                  
+            </ion-col>           
+          </ion-row> -->
+    </ion-grid>      
+  </ion-list>    
 </ion-content>
-
-
-
-<!-- <ion-header>
-    <ion-navbar>
-      <ion-title>
-        BACK
-      </ion-title>
-    </ion-navbar>
-  </ion-header>
-
-<ion-content>  
-    <ion-list>        
-      <ion-list-header>
-          <ion-item>
-              <ion-icon name="car" item-start></ion-icon>
-              Your Run for {{ task.pers}} members of {{ task.artist.name | titlecase}}
-          </ion-item>
-       </ion-list-header>      
-         
-    </ion-list>    
-      <ion-list>              
-          <ion-grid>
-            <ion-row>
-              <ion-col col-2>
-                <ion-icon name="alarm" item-start></ion-icon>
-              </ion-col>
-              <ion-col col-3>
-                <h1>{{ task.startAt | date: 'hh:mm' }}</h1>
-                <p>{{ task.startAt | date: 'dd/MM' }}</p>
-              </ion-col>
-              <ion-col col-7>
-                  <ion-list>
-                    <ion-item>
-                      <ion-icon name="pin"></ion-icon>
-                      {{ task.from.name }}
-                    </ion-item>
-                    <ion-item>
-                      <ion-icon name="pin"></ion-icon>
-                        {{ task.to.name }}
-                    </ion-item>
-                  </ion-list>
-              </ion-col>              
-            </ion-row>
-            <ion-row #ctaList>
-              <ion-col col-2>                  
-              </ion-col>
-              <ion-col col-6> 
-                  <ion-label>
-                      Start 1 of 2
-                    </ion-label>
-                    <ion-label *ngIf="started">
-                        complete 1 of 2
-                      </ion-label>
-                      <ion-label *ngIf="oneOfTwoCompleted">
-                          start 2 of 2
-                      </ion-label>
-                      <ion-label *ngIf="twoOfTwoStarted">
-                          complete 2 of 2
-                        </ion-label>
-              </ion-col>              
-              <ion-col col-4>
-                <ion-list *ngIf="task.legs.length == 2 ; else threeLegs">
-                  <ion-item *ngIf="!started ; else oneOfTwoStarted">
-                    
-                    <ion-range [(ngModel)]="StartConfirmValue" color="secondary" (ionChange)="updateStartConfirmValue(StartConfirmValue)" >
-                    </ion-range>                       
-                  </ion-item>
-                  <ng-template #oneOfTwoStarted>
-                      <ion-label>
-                          <span [@enterAnimation]>started 1 of 2</span>
-                        </ion-label>
-                    <ion-range 
-                      *ngIf="!oneOfTwoCompleted; else oneOfTwoComp"  
-                      [(ngModel)]="CompletedOneOfTwoConfirmValue"
-                      color="secondary"
-                      (ionChange)="updateCompletedOneOfTwoConfirmValue(CompletedOneOfTwoConfirmValue)" >
-                    </ion-range>
-                    <ng-template #oneOfTwoComp>
-                        <ion-label>
-                            <span [@enterAnimation]>completed 1 of 2</span>
-                          </ion-label>
-                    </ng-template>
-                    <ion-range 
-                      *ngIf="!twoOfTwoStarted; else twoOfTwoComp"  
-                      [(ngModel)]="CompletedOneOfTwoConfirmValue"
-                      color="secondary"
-                      (ionChange)="updateTwoOfTwoStartedConfirmValue(CompletedOneOfTwoConfirmValue)" >
-                    </ion-range>
-                    <ng-template #twoOfTwoComp>
-                        <ion-label>
-                            <span [@enterAnimation]>started 2 of 2</span>
-                          </ion-label>
-                    </ng-template>
-                    
-                    </ng-template>
-                  <ion-item>                        
-                  </ion-item>
-                </ion-list>
-                <ng-template #threeLegs>
-
-                </ng-template>
-              </ion-col>                              
-            </ion-row>
-          </ion-grid>      
-          
-        
-        <ion-item>
-          
-        </ion-item>
-      </ion-list>      
-    
-</ion-content> -->
-
-
-<!-- animations: [
-    trigger(
-      'enterAnimation', [
-        transition(':enter', [
-          style({transform: 'translateX(100%)', opacity: 0}),
-          animate('3000ms', style({transform: 'translateX(0)', opacity: 1}))
-        ]),
-        transition(':leave', [
-          style({transform: 'translateX(0)', opacity: 1}),
-          animate('3000ms', style({transform: 'translateX(100%)', opacity: 0}))
-        ])
-      ]
-    )
-  ], -->
-  <!-- nativeElement.children[""0""].children[""0""].children[""0""].children[""0""].children[""0""].children[""0""].children[""0""].textContent
-   -->
-
-  <!-- nativeElement.children[""0""].children[""0""].children[""0""].children[""0""].children[""0""].children[2].attributes[14].value -->

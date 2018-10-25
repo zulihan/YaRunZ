@@ -11,12 +11,13 @@ import { Runner } from '../_models/runner';
 export class RunzService {
 
     runzCollection: AngularFirestoreCollection<any>; 
-    runDocument: AngularFirestoreDocument<any>;
+    runDocument;
+    // runDocument: AngularFirestoreDocument<any>;
 
     constructor(private afs: AngularFirestore) { 
         // TODO: replace with dynamic ref
         this.runzCollection = this.afs.collection('runz');
-        this.runDocument = this.runzCollection.doc('RloiEQWpv1LY8ce2kjE7');    
+            
         // , ref => ref.where('taskId', '==', '55mVebuSu7sYymSbOE2u')
     }
 
@@ -94,27 +95,34 @@ export class RunzService {
         
     }
 
-    getRun() {
-        return this.runDocument.ref.get()
-            .then(doc => {
-            if (!doc.exists) {
-                console.log('No such document!');
-            } else {
-                console.log('Document data:', doc.data());
-                return doc.data();
-            }
-            })
-            .catch(err => {
-                console.log('Error getting document', err);
-            });;
+    // TODO: Change for run id
+    getRun(id?) {
+        // return this.runDocument = this.runzCollection.doc(id);
+        // console.log(' RunzService -> getRun -> this.runDocument', this.runDocument);
+        //  this.runDocument.valueChanges();
+        let run;
+        return this.runzCollection.doc(id).ref.get();
     }
 
-    updateRun(runDirections) {
-        // TODO: implement dynamic query for doc id       
+    // getRun() {
+    //     return this.runDocument.ref.get()
+    //         .then(doc => {
+    //         if (!doc.exists) {
+    //             console.log(' RunzService -> getRun -> No such document!');
+    //         } else {
+    //             console.log(' RunzService -> getRun -> doc.data()', doc.data());
+    //             return doc.data();
+    //         }
+    //         })
+    //         .catch(err => {
+    //             console.log(' RunzService -> getRun -> Error getting document', err);
+    //         });;
+    // }
+
+    updateRun(id, runDirections) {
+        // TODO: implement dynamic query for doc id 
+        this.runDocument = this.runzCollection.doc(id);      
         return this.runDocument.update(runDirections);
-
-
-
 
         // this.runzCollection.doc('0wopfJYxQ19ofqFqEIrH').ref.get().then((doc) => {
         //     if (doc.exists) {
@@ -127,25 +135,4 @@ export class RunzService {
         //       console.log("Error getting document:", error);
         //   });
     }
-
-    // runUpdate(legs, task) {
-    //     let run = {
-    //         taskId: task.id,
-    //         legs: {
-    //             one: {
-    //                 from: task.from,
-    //                 to: task.to,
-    //                 started_at: new Date(Date.now()),
-    //                 completed_at: null
-    //             },
-    //             two: {
-    //                 from: task.to,
-    //                 to: task.from,
-    //                 started_at: null,
-    //                 completed_at: null
-    //             }
-    //         }     
-    //     }
-    //     return this.runzCollection.update(run);
-    // }
 }

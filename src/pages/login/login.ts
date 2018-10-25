@@ -17,26 +17,24 @@ export class LoginPage {
     public navCtrl: NavController,
     public loadingController: LoadingController,
     private authService: AuthService,
-    private geoService: GeoService) {
-
-  }
+    private geoService: GeoService) {}
 
   login() {
         
     // this.authService.login(this.username, this.password)
     // .subscribe(
     //   response => {
-    //     console.log('logged in', response);
-    //     console.log('usename: ', this.username);
-    //     console.log('password: ', this.password);
+        // console.log(' LoginPage -> login -> response', response);
+    //     console.log(' LoginPage -> login -> this.username', this.username);
+    //     console.log(' LoginPage -> login -> this.password', this.password);
     //     this.navCtrl.push(TabsPage);
     //   },
     //   error => {
-    //     console.log(error.message);   
+    //     console.log(' LoginPage -> login -> error.message', error.message);
     //   }
     // );     
     // this.geoService.getPosition();
-    this.loadApp();   
+    this.loadApp(); 
   }
 
   loadApp() {

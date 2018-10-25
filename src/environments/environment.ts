@@ -4,18 +4,7 @@
 
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:5000/api/',
-  nodeApiUrl: 'http://localhost:4201/api/',
-  firebaseConfig: {
-    apiKey: 'AIzaSyCTUO8mVPiYvT9lcxA_GRGI5GipYke4oLw',
-    authDomain: 'festivalgeotracker.firebaseapp.com',
-    databaseURL: 'https://festivalgeotracker.firebaseio.com',
-    projectId: 'festivalgeotracker',
-    storageBucket: 'festivalgeotracker.appspot.com',
-    messagingSenderId: '1058082994374'
-  },
-  // googleMapsKey: 'AIzaSyAjUVpulfQoIt0LHVGcO9KLzitRXwbZVfs'
-  googleMapsKey: 'AIzaSyCTUO8mVPiYvT9lcxA_GRGI5GipYke4oLw'
+  
 };
 
 // apiKey: 'AIzaSyAwkFHZ4qZUoBSAVCz6SJCtldRfDmd20vE',

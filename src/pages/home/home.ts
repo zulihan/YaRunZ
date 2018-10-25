@@ -1,13 +1,11 @@
 import { Component, OnInit, AfterViewChecked, NgZone } from '@angular/core';
-import { NavController, NavParams, LoadingController, Alert, AlertController } from 'ionic-angular';
+import { NavController, LoadingController, Alert, AlertController } from 'ionic-angular';
 import { AuthService } from '../../app/_services/auth.service';
 import { TasksService } from '../../app/_services/tasks.service';
 import { Runner } from '../../app/_models/runner';
 import { RunnerTask } from '../../app/_models/runner-task';
 import { TaskDetailPage } from '../task-detail/task-detail';
-import { RunnerService } from '../../app/_services/runner.service';
 import { GeoService } from '../../app/_services/geo.service';
-import { TimeInterval } from 'rxjs';
 
 @Component({
   selector: 'page-home',
@@ -18,7 +16,7 @@ export class HomePage implements OnInit, AfterViewChecked {
   runner: Runner;
   tasks: RunnerTask[] = [];
   params: any;
-
+  tasksSubscription;
   loading;
   
   updateInterval;      
@@ -33,53 +31,50 @@ export class HomePage implements OnInit, AfterViewChecked {
     public loadingCtrl: LoadingController,
     public _alertCtrl: AlertController, 
     private zone: NgZone) {
-
       this._alert = this._alertCtrl.create({
         'title': "Error",
         'message': "'Couldn't update your tracking status, please retry when you have a connection.'",
         buttons: ['OK']
-    });
+      });
   }
 
   ngOnInit() {
     // this.isAvailable = this.geoService.isAvailable;
     // this.runner = this.authService.currentUser;
     // this.tasksService.getRunnerTasks();
+
     this.runner = JSON.parse(localStorage.getItem('user')); 
-    console.log('this runner: ', this.runner);
+    console.log(' HomePage -> ngOnInit -> this.runner', this.runner);
 
     // this.geoService.runnerTracking.subscribe(rt => {
-    //   console.log('***********ngOnInit home ts: **************', rt);
+    // console.log(' HomePage -> ngOnInit -> rt', rt);
     //   this.isAvailable = rt.available;
-    //   console.log('***********ngOnInit home ts: this.isAvailable **************', this.isAvailable);
-            
+    // console.log(' HomePage -> ngOnInit -> this.isAvailable', this.isAvailable);            
     // });
     
     this.doRefresh(0);
   }
 
-  ngAfterViewChecked() {
-    
-  }
+  ngAfterViewChecked() {}
 
   ionViewWillEnter() {
     this.geoService.runnerTracking.subscribe(rt => {
-      console.log('***********ionViewWillEnter() home ts: **************', rt);
+      console.log(' HomePage -> ionViewWillEnter -> rt', rt);
       this.isAvailable = rt.available;
-      console.log('***********ionViewWillEnter() home ts: this.isAvailable **************', this.isAvailable);
-      console.log('%%% ionViewWillEnter() home ts : this.updateInterval %%%', this.updateInterval);
+      console.log(' HomePage -> ionViewWillEnter -> this.isAvailable', this.isAvailable);
+      console.log(' HomePage -> ionViewWillEnter -> this.updateInterval', this.updateInterval);
       if (this.isAvailable === false && this.updateInterval !== undefined) {
         clearInterval(this.updateInterval);
       } else if (this.isAvailable) {
         if (this.updateInterval) clearInterval(this.updateInterval);
         this.updateInterval = setInterval( () => {
           this.geoService.updatePosition(this.isAvailable);
-          console.log('position udpdated');
+          console.log(' HomePage -> this.updateInterval -> position udpdated');
         }, 60000)
       }      
     });
-    console.log('%%% ionViewWillEnter() home ts : this.updateInterval %%%: ', this.updateInterval);
-    console.log('***********ionViewWillEnter() home ts: this.isAvailable **************', this.isAvailable );
+    console.log(' HomePage -> ionViewWillEnter -> this.updateInterval', this.updateInterval);
+    console.log(' HomePage -> ionViewWillEnter -> this.isAvailable', this.isAvailable);
     
   }
 
@@ -101,25 +96,28 @@ export class HomePage implements OnInit, AfterViewChecked {
   // }
 
   doRefresh(refresher) {
-    this.tasksService.getRunnerTasks()
+    console.log(' HomePage -> doRefresh -> this.tasks', this.tasks);
+    this.tasksSubscription = this.tasksService.runnerTasks
       .subscribe( tsks => {     
         if (tsks && tsks.length > 0) {
           tsks.forEach(tsk => tsk.startAt = new Date(tsk.startAt.seconds * 1000));
-          console.log('runner tasks: ', tsks);
           this.tasks = tsks; 
+          console.log(' HomePage -> doRefresh -> this.tasks', this.tasks);
         }  
       });
+    // let tasksSubscription = this.tasksService.runnerTasks.subscribe( rts => {
+    //   this.tasks = rts;      
+    // });
     if (refresher !== 0) refresher.complete();
   }
 
   updateAvailable(event) {
     if (this.loading) this.dismissLoading();
-    console.log('updateAvailable(event) event.value', event.value);
-    
+    console.log(' HomePage -> updateAvailable -> event.value', event.value);    
     this.showLoading();
     this.zone.run(() => {
       if (event.value === false ) {
-        console.log('updateAvailable(event) this.updateInterval1', this.updateInterval);
+        console.log(' HomePage -> updateAvailable -> this.updateInterval', this.updateInterval);
         clearInterval(this.updateInterval);
         this.updateInterval = 0;
         console.log(' HomePage -> updateAvailable -> this.updateInterval2', this.updateInterval);        
@@ -146,12 +144,10 @@ export class HomePage implements OnInit, AfterViewChecked {
         })
         .catch(error => {
           this.dismissLoading();
-          console.log('updateAvailable() error: ', error);
+          console.log(' HomePage -> updateAvailable -> error', error);
           this._alert.present();
         }); 
-    });
-    
-    
+    });  
   }
 
   showLoading() {
