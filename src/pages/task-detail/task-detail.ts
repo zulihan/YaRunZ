@@ -178,7 +178,7 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
       this.checkTaskStatusUpdateView(this.task.status, this.task.type);
       if (this.updatePositionInterval) clearInterval(this.updatePositionInterval);
 
-      this.map.resolveRoute(this.task.status, this.task.type);
+      this.map.resolveRoute(this.task.status, this.task.type, this.map.run);
       this.map.returnDirections(this.task.status, this.map.route);
       this.updatePBValue(this.task.status);
 
@@ -189,7 +189,7 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
             this.task.status === RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION) {
             this.updatePositionInterval = setInterval( () => {
               console.log(' TaskDetailPage -> this.updatePositionInterval -> updatePositionInterval', this.updatePositionInterval);
-              this.map.resolveRoute(this.task.status, this.task.type);
+              this.map.resolveRoute(this.task.status, this.task.type, this.map.run);
               this.map.returnDirections(this.task.status, this.map.route);
               this.updatePBValue(this.task.status);
             }, 30000);

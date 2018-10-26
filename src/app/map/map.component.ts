@@ -62,7 +62,9 @@ export class MapComponent implements OnInit {
 
   @Input('taskStatus') taskStatus; 
 
-  @Input('taskType') runType;  
+  @Input('taskType') runType; 
+  
+  @Input('startAt') runStartAt;
 
   @Input('runId') runId;
 
@@ -328,7 +330,7 @@ export class MapComponent implements OnInit {
   addRunnerMarker() {
     this.runnerMarker = new google.maps.Marker({
       map: this.map,
-      title: 'Zu position',
+      title: 'My position',
       icon: 'assets/icons/m1.png',
       animation: google.maps.Animation.BOUNCE,
       position: this.runnerMapPosition
@@ -374,65 +376,96 @@ export class MapComponent implements OnInit {
   }
 
   resolveRoute(taskStatus, runType) {
-    let route = {};
-    let from;
+    let waypoints;
+    let from = new google.maps.LatLng(this.taskLocations[0].coord.latitude, this.taskLocations[0].coord.longitude);
+    let to = new google.maps.LatLng(this.taskLocations[1].coord.latitude, this.taskLocations[1].coord.longitude);
+    let origin = new google.maps.LatLng(this.FESTIVAL.LAT, this.FESTIVAL.LNG);
+    let destination = new google.maps.LatLng(this.FESTIVAL.LAT, this.FESTIVAL.LNG);
+    let runnerPosition = new google.maps.LatLng(this.runnerLocationLat, this.runnerLocationLng);
+    let departureTime = new Date(Date.now());
 
-    switch(taskStatus) {
+    switch(taskStatus) {      
       case RunStatus.NOT_STARTED:
-        this.route = {
-          origin: new google.maps.LatLng(this.FESTIVAL.LAT, this.FESTIVAL.LNG),
-          destination: new google.maps.LatLng(this.FESTIVAL.LAT, this.FESTIVAL.LNG),  
-          waypoints: [ 
-            {
-              location: runType = RunType.DROPOFF ? 
-                new google.maps.LatLng(this.taskLocations[1].coord.latitude, this.taskLocations[1].coord.longitude):
-                new google.maps.LatLng(this.taskLocations[0].coord.latitude, this.taskLocations[0].coord.longitude),
+        switch(runType) {
+          case RunType.DROPOFF:
+            waypoints = [{
+              location: to,
               stopover: true
-            }        
-          ],
-          travelMode: 'DRIVING'
-        };      
-        console.log(' MapComponent -> resolveRoute -> route', route);
-        break;
+            }]
+          break;
+          case RunType.PICKUP:
+            waypoints = [{
+              location: from,
+              stopover: true
+            }]
+          break;
+          case RunType.THREELEGS:
+            waypoints = [
+              {
+                location: this.taskLocations[0].place_id,
+                stopover: true
+              },
+              {
+                location: this.taskLocations[1].to.place_id,
+                stopover: true
+              }
+            ]
+          break;
+        }
+        departureTime = new Date(this.runStartAt);
+      break;
       case RunStatus.STARTED:      
-        from = !this.hasStarted ?
-          new google.maps.LatLng(this.FESTIVAL.LAT, this.FESTIVAL.LNG) :        
-          new google.maps.LatLng(this.runnerLocationLat, this.runnerLocationLng);
-        this.route = {
-          origin: from,
-          destination: runType = RunType.DROPOFF ? 
-            new google.maps.LatLng(this.taskLocations[1].coord.latitude, this.taskLocations[1].coord.longitude):
-            new google.maps.LatLng(this.taskLocations[0].coord.latitude, this.taskLocations[0].coord.longitude),
-          travelMode: 'DRIVING'
-        };
-        if (!this.hasStarted) {
-          this.returnDirections(taskStatus, route);
-          this.displayRoute(this.directions);
-          this.hasStarted = true;
-          this.resolveRoute(taskStatus, runType);
-        }        
-        break;
+        origin = this.hasStarted ? runnerPosition : origin;
+        destination = runType = RunType.DROPOFF ? to : from;
+      break;
       case RunStatus.ARRIVED_AT_DESTINATION:
-        this.route = {
-          origin: runType = RunType.DROPOFF ? 
-            new google.maps.LatLng(this.taskLocations[1].coord.latitude, this.taskLocations[1].coord.longitude):
-            new google.maps.LatLng(this.taskLocations[0].coord.latitude, this.taskLocations[0].coord.longitude),
-          destination: new google.maps.LatLng(this.FESTIVAL.LAT, this.FESTIVAL.LNG),          
-          travelMode: 'DRIVING'
-      };
-        break;
+        origin = runType === RunType.DROPOFF ? to : from;
+        destination = runType === RunType.DROPOFF ? to : from 
+      break;
+      case RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION:
+        origin = this.hasStarted ? runnerPosition : from;
+        destination = to;
+      break;
+      case RunStatus.ARRIVED_AT_SECOND_DESTINATION:
+        origin = this.hasStarted ? runnerPosition : to;        
+      break;
       case RunStatus.ON_THE_WAY_BACK:
-        from = this.hasStarted ?
-          new google.maps.LatLng(this.runnerLocationLat, this.runnerLocationLng) :
-          runType = RunType.DROPOFF ? 
-            new google.maps.LatLng(this.taskLocations[1].coord.latitude, this.taskLocations[1].coord.longitude) :
-            new google.maps.LatLng(this.taskLocations[0].coord.latitude, this.taskLocations[0].coord.longitude)  
-        this.route = {
-          origin: from,
-          destination: new google.maps.LatLng(this.FESTIVAL.LAT, this.FESTIVAL.LNG),          
-          travelMode: 'DRIVING'
-        };  
+      origin = this.hasStarted ? runnerPosition :
+      runType = RunType.DROPOFF || RunType.THREELEGS ? to : from;
+      break;             
     }
+
+    if (waypoints !== undefined) {
+      this.route = {
+        origin,
+        destination,  
+        waypoints,
+        travelMode: 'DRIVING',
+        drivingOptions: {
+          departureTime,
+          trafficModel: 'pessimistic'
+        }
+      }; 
+    } else {
+      this.route = {
+        origin,
+        destination,  
+        travelMode: 'DRIVING',
+        drivingOptions: {
+          departureTime,
+          trafficModel: 'pessimistic'
+        }
+      };
+    }
+     
+    if (!this.hasStarted) {
+      this.returnDirections(taskStatus, this.route);
+      setTimeout( () => {
+        this.displayRoute(this.directions);
+        this.hasStarted = true;
+        this.resolveRoute(taskStatus, runType);
+      },1000);
+    }   
   }
 
   returnDirections(taskStatus, route) {
@@ -470,6 +503,7 @@ export class MapComponent implements OnInit {
         strokeColor: '#00acc1'
       }
     }); 
+    console.log(' MapComponent -> displayRoute -> this.directionsDisplay', this.directionsDisplay);
     this.directionsDisplay.setDirections(directions);
     this.directionsDisplay.setMap(this.map); 
     this.directionsDisplay.setOptions( { suppressMarkers: true } );      

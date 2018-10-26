@@ -97,13 +97,15 @@ export class HomePage implements OnInit, AfterViewChecked {
 
   doRefresh(refresher) {
     console.log(' HomePage -> doRefresh -> this.tasks', this.tasks);
-    this.tasksSubscription = this.tasksService.runnerTasks
-      .subscribe( tsks => {     
+    this.tasksSubscription = this.tasksService.getRunnerTasks()
+      .subscribe( tsks => {        
+        console.log(' HomePage -> doRefresh -> this.tasks2', this.tasks);
         if (tsks && tsks.length > 0) {
           tsks.forEach(tsk => tsk.startAt = new Date(tsk.startAt.seconds * 1000));
           this.tasks = tsks; 
-          console.log(' HomePage -> doRefresh -> this.tasks', this.tasks);
-        }  
+          console.log(' HomePage -> doRefresh -> this.tasks3', this.tasks);
+        }
+        this.tasks = tsks;
       });
     // let tasksSubscription = this.tasksService.runnerTasks.subscribe( rts => {
     //   this.tasks = rts;      

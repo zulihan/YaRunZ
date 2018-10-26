@@ -49,10 +49,13 @@ export class TasksService {
         return this.runnersTasksCollection.snapshotChanges().map(actions => {
             return actions.map(action => {
               const data = action.payload.doc.data() as RunnerTask;
+              const payloadType = action.payload.type;
+              console.log(' TasksService -> type', payloadType);
               const id = action.payload.doc.id;
-              return {id,...data};
+              return {id,payloadType,...data};
             });
           });
+        // return this .runnersTasksCollection.valueChanges();
           
           
     }    
