@@ -18,6 +18,10 @@ import {ProgressBarModule} from "angular-progress-bar"
 
 import { AngularFireModule } from 'angularfire2';
 import { AngularFirestoreModule } from 'angularfire2/firestore';
+import { AngularFireAuthModule  } from '@angular/fire/auth';
+import { Firebase } from '@ionic-native/firebase';
+// import { GooglePlus } from '@ionic-native/google-plus';
+
 import { environment } from '../environments/environment';
 
 import { MyApp } from './app.component';
@@ -38,6 +42,8 @@ import { GeoService } from './_services/geo.service';
 import { RunzService } from './_services/runz.service';
 import { RunnerService } from './_services/runner.service';
 import { MapComponent } from './map/map.component';
+import { FcmProvider } from '../providers/fcm/fcm';
+import { ConvertersService } from './_helpers/converters.service';
 
 @NgModule({
    declarations: [
@@ -68,6 +74,7 @@ import { MapComponent } from './map/map.component';
 
     AngularFireModule.initializeApp(environment.firebaseConfig),
     AngularFirestoreModule,
+    AngularFireAuthModule,
     BrowserAnimationsModule,
     MatProgressBarModule,
     IonicStorageModule,
@@ -94,7 +101,10 @@ import { MapComponent } from './map/map.component';
     RunzService,
     TasksService,
     RunnerService,
+    Firebase,
+    FcmProvider,
     HTTP,
+    ConvertersService,
     {provide: ErrorHandler, useClass: IonicErrorHandler}
   ],
   schemas: [ NO_ERRORS_SCHEMA, CUSTOM_ELEMENTS_SCHEMA ],

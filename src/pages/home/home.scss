@@ -14,6 +14,144 @@ page-home {
 
     .toggle-md-secondary.toggle-checked .toggle-inner {
         background-color: white;
-    }   
+    }  
+
+    
+    ion-item.item.item-block.item-md {
+        padding-left: 0;
+    }
+    
+    ion-list.list.list-md {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    ion-label.label.label-md {
+        margin: 0;
+    }
+
+    ion-item.task-item.item.item-block.item-md {
+        box-shadow: 0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12);
+    
+        .input-wrapper {
+            align-items: flex-start;
+            justify-items: auto;
+            display: flex;
+        }
+
+        .item-inner {
+            padding: 0;
+        }
+
+        button.item.item-block.item-md {
+            padding: 0;
+        }
+    
+    }
+
+    // *************
+
+    .task-item {
+        color: darkgray;
+
+        h1 {
+            color: darkgray;    
+        }
+
+        h2 {
+            color: darkgray;
+            font-size: 2.1rem;
+        } 
+        
+        .col {
+            margin:0;
+        }
+
+        ion-col.col-time-left.col {
+            display: flex;
+            justify-content: center;
+        }
+
+        ion-col.col-directions.col {
+            display: flex;
+            height: 100%;
+            padding-left: 15px;
+        }
+        
+        .time-list, .passengers-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin: 0 auto;
+            height: 100px;
+            padding: 5px 0 15px 0;
+            justify-content: inherit;
+        }
+
+        ion-icon.icon-big.icon.icon-md.ion-md-alarm {
+            font-size: 1.6em;
+            margin: 0;
+        }
+        
+        .clock-icon, .people-icon {
+            margin: 0 auto;
+            justify-self: normal;
+        }
+        
+
+        ion-icon.icon.icon-md.ion-md-people {
+            font-size: 1.6em;
+            margin: 0;
+        }
+        
+        .directions-list {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .location {
+            margin: 10px 0;
+        }
+        
+        .run-details-wrapper {
+            display: flex;
+            margin: 10px 0
+        }
+        
+        .run-details {
+            display: flex;
+            align-items: center;
+            margin-left: 5px;
+            padding-left: 10px;
+            border-left: 2px solid #00acc1;
+            height: 30px;
+            font-size: 0.8em;
+            color: lightgrey;
+
+            .run-distance {
+                margin-right: 15px;
+            }
+        }
+
+        .passengers {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .pers {
+            text-align: center;
+
+            p{
+                font-size: .7em;
+            }
+        }
+        
+        ion-icon.icon.icon-md {
+            align-self: center;
+        }
+    }
     
 }

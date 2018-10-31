@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "1058082994374",
+    "firebase_url": "https://festivalgeotracker.firebaseio.com",
+    "project_id": "festivalgeotracker",
+    "storage_bucket": "festivalgeotracker.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1058082994374:android:3b9b9175c4a5dd26",
+        "android_client_info": {
+          "package_name": "io.ionic.yarunz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1058082994374-ddibvq94o6ivvkl0gq18edcldfjhhv75.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNDpClDRKN5l8uFA4Udg8rxjXqE7JKCn0"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

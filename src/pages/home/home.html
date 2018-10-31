@@ -22,7 +22,8 @@
             <img src="{{ runner?.photoUrl }}">
           </ion-avatar>
           <h2> Wass'up {{ runner?.userName | titlecase }} yo?</h2> -->
-        <ion-label class="textAlignRight" *ngIf="!isAvailable; else avlbl">Activate geolocation ?</ion-label>
+        <ion-label class="textAlignRight" *ngIf="!isAvailable; else avlbl">Activate geolocation ?          
+        </ion-label>
         <ng-template #avlbl>
           <ion-label class="textAlignRight">Your position is tracked</ion-label>
         </ng-template>
@@ -32,37 +33,71 @@
           <ion-icon name="car" item-start></ion-icon>
           Your Runs
       </ion-item>     -->
-    
-    <ng-container *ngIf="tasks.length !== 0; else noTasks">            
-      <ion-item *ngFor="let task of tasks">
-        <button ion-item (click)="buttonClick(task)">
-          <ion-grid>
-            <ion-row>
-              <ion-col col-2>
-                <ion-icon name="alarm" item-start  class="icon-big"></ion-icon>
-              </ion-col>
-              <ion-col col-3 class="time-to-go">
-                <h1>{{ task.startAt | date: 'hh:mm' }}</h1>
-                <p>{{ task.startAt | date: 'dd/MM' }}</p>
-              </ion-col>
-              <ion-col col-7>
-                  <ion-list>
-                    <ion-item>
-                      <ion-icon name="pin"></ion-icon>
-                      {{ task.from.name }}
-                    </ion-item>
-                    <ion-item>
-                      <ion-icon name="pin"></ion-icon>
-                        {{ task.to.name }}
-                    </ion-item>
-                  </ion-list>
-              </ion-col>              
-            </ion-row>            
-          </ion-grid>          
-        </button>
-      </ion-item>
-    </ng-container> 
-  </ion-list>   
+    </ion-list>
+    <ng-container *ngIf="tasks.length !== 0; else noTasks">
+      <ion-list>            
+        <ion-item *ngFor="let task of tasks"
+          class="task-item">
+          <button ion-item (click)="buttonClick(task)">
+            <ion-grid>
+              <ion-row>
+                <ion-col col-2 class="col-time-left">
+                  <div class="time-list">
+                    <div class="clock-icon">
+                      <ion-icon name="alarm" ios="ios-alarm-outline" item-start  class="icon-big">
+                      </ion-icon>
+                    </div>
+                    <div class="task-date">
+                      <h2>{{ task.startAt | date: 'hh:mm' }}</h2>                      
+                    </div>
+                    <div>
+                      <p>{{ task.startAt | date: 'dd/MM' }}</p>
+                    </div>
+                  </div>
+                </ion-col>                
+                <ion-col col-7 class="col-directions">
+                    <div class="directions-list">
+                      <div class="location">
+                        <ion-icon name="pin"></ion-icon>
+                        {{ task.from.name }}
+                      </div>
+                      <div class="run-details-wrapper">
+                        <div class="run-details">
+                          <div class="run-distance">
+                            <ion-icon name="map"></ion-icon>
+                            <span>{{task.distanceToKm}}</span>
+                          </div>
+                          <div class="run-duration">
+                            <ion-icon name="timer"></ion-icon>
+                            <span>{{task.durationToTime}}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="location">
+                        <ion-icon name="pin"></ion-icon>
+                          {{ task.to.name }}
+                      </div>
+                    </div>
+                </ion-col>
+                <ion-col col-3 class="col-passengers">
+                  <div class="passengers-list"> 
+                    <div class="people-icon">
+                      <ion-icon name="people"></ion-icon>
+                    </div>
+                    <div class="task-date">
+                      <h2>{{ task.pers }}</h2>
+                    </div>
+                    <div>
+                      <p>{{ (task.artist.name) }}</p>
+                    </div>
+                  </div>
+                </ion-col>                              
+              </ion-row>            
+            </ion-grid>          
+          </button>
+        </ion-item>
+      </ion-list> 
+    </ng-container>    
     <ng-template #noTasks>
       <ion-list>
         <ion-item item-center>

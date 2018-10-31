@@ -50,7 +50,7 @@ export class TasksService {
             return actions.map(action => {
               const data = action.payload.doc.data() as RunnerTask;
               const payloadType = action.payload.type;
-              console.log(' TasksService -> type', payloadType);
+              console.log(' TasksService -> getRunnerTasks() -> payloadType', payloadType);
               const id = action.payload.doc.id;
               return {id,payloadType,...data};
             });
@@ -62,6 +62,7 @@ export class TasksService {
 
 
     updateRunnerTask(taskId: string, task: RunnerTask) {
+        console.log(' TasksService -> updateRunnerTask -> task', task);
         this.runnerTask = this.runnersTasksCollection.doc<RunnerTask>(taskId);
         return this.runnerTask.update(task);
         // this.editedRunnerTask.next(this.taskToEditReset());

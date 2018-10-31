@@ -112,9 +112,8 @@ export class GeoService {
 
     getStatus(): Observable<RunnerTracking> {        
         console.log(' GeoService -> this.runnerTracking', this.runnerTracking);
-        return this.runnerTracking;      
-
-    }    
+        return this.runnerTracking;
+    }  
 
     getLocations(): Observable<Location[]> {
         // this.locations.subscribe(loc => console.log('this.locations from getLocations():', loc));

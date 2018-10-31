@@ -21,5 +21,7 @@ export interface RunnerTask {
     type: string;
     taskStatus: string;
     estimatedDuration: any;
+    durationToTime?: string;
     distance: any;
+    distanceToKm?: string;
 }

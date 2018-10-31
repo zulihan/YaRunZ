@@ -41,28 +41,31 @@ export class AuthService {
       username,
       password
     };
-    // console.log(JSON.parse(localStorage.getItem('user')));
+    console.log(JSON.parse(localStorage.getItem('user')));
 
     // return this.currentUser = JSON.parse(localStorage.getItem('user'));
-    // return this.http.post(this.baseUrl + 'login', model)
-    //   .pipe(
-    //     map( (response: any) => {
-    //       // const user = response;
-    //       console.log('user from login response', response._body);
-    //       if (response.status === 200) {
-    //         const user = JSON.parse(response._body);
-    //         console.log('user token: ',  user.token)
-    //         localStorage.setItem('token', user.token);
-    //         this.decodedToken = this.jwtHelper.decodeToken(user.token);
-    //         console.log('this decoded token: ', this.decodedToken);
-    //         localStorage.setItem('user', JSON.stringify(user.user));
-    //         this.currentUser = JSON.parse(localStorage.getItem('user'));
-    //         console.log('this.currentUser: ', this.currentUser);
-    //         this.changeUserPhoto(user.user.photoUrl);
-    //       }
-    //     })
-    //   )
-    //   .catch(this.handleErrorObservable);
+    return this.http.post(this.baseUrl + 'login', model)
+      .pipe(
+        map( (response: any) => {
+          // const user = response;
+          console.log('user from login response', response._body);
+          if (response.status === 200) {
+            const user = JSON.parse(response._body);
+            console.log('user token: ',  user.token)
+            localStorage.setItem('token', user.token);
+            this.decodedToken = this.jwtHelper.decodeToken(user.token);
+            console.log('this decoded token: ', this.decodedToken);
+            localStorage.setItem('user', JSON.stringify(user.user));
+            this.currentUser = JSON.parse(localStorage.getItem('user'));
+            console.log('this.currentUser: ', this.currentUser);
+            this.changeUserPhoto(user.user.photoUrl);
+          } else {
+            this.handleErrorObservable(response);
+          } 
+        },
+        )
+      )
+      
   }
 
   isLoggedIn(): Observable<boolean> {

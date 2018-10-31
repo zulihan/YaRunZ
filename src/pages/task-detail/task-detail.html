@@ -11,25 +11,62 @@
     <ion-list-header>
       <ion-item>
         <div class="header-item">
-          <ion-icon name="alarm" class="icon-big"></ion-icon>
+          <!-- <div>
+            <ion-icon name="alarm" class="icon-big"></ion-icon>
+          </div> -->
           <div class="date-time">
-            <h1>{{ task.startAt | date: 'hh:mm' }}</h1>
-            <p>{{ task.startAt | date: 'dd/MM' }}</p>
+            <p>Scheduled at:</p>
+            <h2>{{ task.startAt | date: 'HH:mm' }}</h2>
           </div>
         </div>
         <div class="header-item">
-          <ion-icon name="people" class="icon-big"></ion-icon>
-          <div>
-            <h1>{{ task.pers}} pers.</h1>
-            <p> {{ task.artist.name | titlecase}}</p>
+          <!-- <div>
+            <ion-icon name="people" class="icon-big"></ion-icon>
+          </div> -->
+          <div *ngIf="startedAt">
+            <p>Started at: </p>
+            <h2> {{ startedAt | date: 'HH:mm' }} </h2>
           </div>
         </div>
+        <div class="header-item">
+            <!-- <div>
+              <ion-icon name="speedometer"></ion-icon>
+            </div> -->
+            <div>
+              <p>Next destination in: </p>
+              <p>
+                <span>{{ distanceToNext }}</span>
+                 - 
+                <span>{{ durationToNext }}</span>
+              </p>
+            </div>
+          </div>
       </ion-item>
-    </ion-list-header>      
-  </ion-list>    
+    </ion-list-header>   
+  </ion-list>
   <ion-list> 
-    {{ task.type }} /  {{ task.status }} {{ started }} {{ oneOfTwoCompleted }}  {{ twoOfTwoStarted }}         
-    <ion-grid>              
+    <ion-grid>
+      <ion-row>
+        <ion-col col-1>      
+        </ion-col>
+        <ion-col col-10>
+          <div class="route-progress-section">
+            <ion-icon name="pin"></ion-icon>
+            <!-- <progress-bar [progress]="100" [color]="'#488aff'">
+            </progress-bar> -->
+            <mat-progress-bar class="route-progress-margin"
+              class="progress-bar-margin"
+              [color]="pbOptions.color"
+              [mode]="pbOptions.mode"
+              [value]="pbOptions.value"
+              [bufferValue]="pbOptions.bufferValue">
+            </mat-progress-bar>
+            <ion-icon name="pin"></ion-icon>
+          </div>
+        </ion-col>
+        <ion-col col-1>
+        </ion-col>
+      </ion-row>
       <ion-row>
         <ion-col col-5>
           <div class="route-location" 
@@ -67,7 +104,7 @@
             <p>{{ FESTIVAL.NAME }}</p>
           </div>
           <div class="route-location"
-            *ngIf="task.type === runType.THREELEGS && oneOfThreeCompleted">
+            *ngIf="task.type === runType.THREELEGS && oneOfThreeCompleted && !twoOfThreeCompleted">
             <p>{{ task.from.name }}</p>
           </div>  
           <div class="route-location"
@@ -116,7 +153,7 @@
             <p>{{ task.from.name }}</p>
           </div>
           <div class="route-location"
-            *ngIf="task.type === runType.THREELEGS && oneOfThreeCompleted">
+            *ngIf="task.type === runType.THREELEGS && oneOfThreeCompleted && !twoOfThreeCompleted">
             <p>{{ task.to.name }}</p>
           </div>
           <div class="route-location"
@@ -126,42 +163,21 @@
 
         </ion-col>
       </ion-row>
-      <ion-row>
-        <ion-col col-2>            
-        </ion-col>
-        <ion-col col-8>
-          <div class="route-progress-section">
-            <ion-icon name="pin"></ion-icon>
-            <!-- <progress-bar [progress]="100" [color]="'#488aff'">
-            </progress-bar> -->
-            <mat-progress-bar class="route-progress-margin"
-              class="progress-bar-margin"
-              [color]="pbOptions.color"
-              [mode]="pbOptions.mode"
-              [value]="pbOptions.value"
-              [bufferValue]="pbOptions.bufferValue">
-            </mat-progress-bar>
-            <ion-icon name="pin"></ion-icon>
-          </div>
-        </ion-col>
-        <ion-col col-2>
-        </ion-col>
-      </ion-row>
+      
       <!-- Range Button -->
       <ion-row>
         <ion-col col-2>
-        </ion-col>
-        {{ !started && !completed }} {{ started && !oneOfTwoCompleted }} {{ oneOfTwoCompleted && !twoOfTwoStarted }} {{ twoOfTwoStarted && !twoOfTwoCompleted }} {{ twoOfTwoCompleted }}
+        </ion-col>        
         <ion-col col-8>
           <ion-list *ngIf="task.type !== runType.THREELEGS; else threeLegs" #ctaList>        
-            <ion-item *ngIf="!started && !completed" >                      
+            <ion-item *ngIf="!started && !completed">                      
               <ion-range
                 #cursorMoveLeft 
                 [(ngModel)]="startConfirmValue"
                 color="secondary"
                 debounce="200"
                 step="5"
-                (ionChange)="updateStatus(startConfirmValue, runStatus.STARTED)" >
+                (ionChange)="updateStatus(startConfirmValue, runStatus.STARTED)">
               </ion-range>                       
             </ion-item>
 
@@ -204,7 +220,7 @@
             </ion-item>              
           </ion-list>
           <ng-template #threeLegs>
-            <ion-list>
+            <ion-list #ctaList>
               <ion-item *ngIf="!started">                      
                 <ion-range
                   #cursorMoveLeft 
@@ -223,7 +239,8 @@
                   debounce="200"
                   step="5"
                   (ionChange)="updateStatus(oneOfThreeCompletedConfirmValue, runStatus.ARRIVED_AT_DESTINATION)" >
-                </ion-range>                
+                </ion-range> 
+                #{{ twoOfThreeCompletedConfirmValue }}                
               </ion-item>
               <ion-item *ngIf="oneOfThreeCompleted && !twoOfThreeStarted">
                 <ion-range                            
@@ -231,8 +248,9 @@
                 color="secondary"
                 debounce="200"
                 step="5"
-                (ionChange)="updateStatus(twoOfTwoStartedConfirmValue, runStatus.ON_THE_WAY_TO_SECOND_DESTINATION)" >
-                </ion-range>                  
+                (ionChange)="updateStatus(twoOfThreeStartedConfirmValue, runStatus.ON_THE_WAY_TO_SECOND_DESTINATION)" >
+                </ion-range> 
+                #{{ twoOfThreeCompletedConfirmValue }}                 
               </ion-item> 
                                     
               <ion-item *ngIf="twoOfThreeStarted && !twoOfThreeCompleted" >
@@ -243,6 +261,7 @@
                   step="5"
                   (ionChange)="updateStatus(twoOfThreeCompletedConfirmValue, runStatus.ARRIVED_AT_SECOND_DESTINATION)" >
                 </ion-range>
+                
               </ion-item>
 
               <ion-item *ngIf="twoOfThreeCompleted && !threeOfThreeStarted" >
@@ -269,7 +288,9 @@
                   <p>CONGRATS !</p>
                   <p>THANKS !</p> 
                 </ion-label>                    
-              </ion-item>              
+              </ion-item>
+              {{ task.type }} /  {{ task.status }} {{ started }} {{ oneOfTwoCompleted }}  {{ twoOfTwoStarted }}         
+        {{ !started && !completed }} {{ started && !oneOfTwoCompleted }} {{ oneOfTwoCompleted && !twoOfTwoStarted }} {{ twoOfTwoStarted && !twoOfTwoCompleted }} {{ twoOfTwoCompleted }}              
             </ion-list>
           </ng-template>
         </ion-col>
@@ -278,22 +299,24 @@
         </ion-col>
       </ion-row>
       <ion-row>
-            <ion-col class="map-container">
-              <!-- <div *ngIf="modalOpened">
-                {{ modalOpened }}
-                <page-map-modal [inputTemplate]="myTemplate"></page-map-modal>
-              </div> -->
-              <div #myTemplate class="map_wrapper">
-                <app-map #map
-                  [mapConfig]="mapConfig"
-                  [taskLocations]="taskLocations"
-                  [taskStatus]="task.status"
-                  [taskType]="task.type"
-                  [runId]="task.runId"
-                  [runStartAt]="task.startAt">
-                </app-map>
-              </div>
-            </ion-col>
+        <ion-col class="map-container">
+          <!-- <div *ngIf="modalOpened">
+            {{ modalOpened }}
+            <page-map-modal [inputTemplate]="myTemplate"></page-map-modal>
+          </div> -->
+          <div #myTemplate class="map_wrapper">
+            <app-map #map
+              [mapConfig]="mapConfig"
+              [taskLocations]="taskLocations"
+              [taskStatus]="task.status"
+              [taskType]="task.type"
+              [runId]="task.runId"
+              [runStartAt]="task.startAt"
+              (directionsChange)="updatedirectionsToNext($event)"
+              (startedAtUpdate)="updateStartedAt($event)">
+            </app-map>
+          </div>
+        </ion-col>
       </ion-row>          
           <!-- <ion-row>
             <ion-col col-2>                  

@@ -1,11 +1,17 @@
 import { Component, OnInit, AfterViewChecked, NgZone } from '@angular/core';
-import { NavController, LoadingController, Alert, AlertController } from 'ionic-angular';
+import { NavController, LoadingController, Alert, AlertController, Platform } from 'ionic-angular';
 import { AuthService } from '../../app/_services/auth.service';
 import { TasksService } from '../../app/_services/tasks.service';
 import { Runner } from '../../app/_models/runner';
 import { RunnerTask } from '../../app/_models/runner-task';
 import { TaskDetailPage } from '../task-detail/task-detail';
 import { GeoService } from '../../app/_services/geo.service';
+import { ConvertersService } from '../../app/_helpers/converters.service';
+
+import { FcmProvider } from '../../providers/fcm/fcm';
+import { ToastController } from 'ionic-angular';
+import { tap } from 'rxjs/operators';
+
 
 @Component({
   selector: 'page-home',
@@ -25,12 +31,16 @@ export class HomePage implements OnInit, AfterViewChecked {
 
   constructor(
     public navCtrl: NavController,
-    public authService: AuthService,
+    private platform: Platform,
+    private authService: AuthService,
     private tasksService: TasksService,
     private geoService: GeoService,
     public loadingCtrl: LoadingController,
-    public _alertCtrl: AlertController, 
-    private zone: NgZone) {
+    public _alertCtrl: AlertController,
+    private convert: ConvertersService, 
+    private zone: NgZone,
+    private fcm: FcmProvider,
+    private toastCtrl: ToastController) {
       this._alert = this._alertCtrl.create({
         'title': "Error",
         'message': "'Couldn't update your tracking status, please retry when you have a connection.'",
@@ -42,10 +52,11 @@ export class HomePage implements OnInit, AfterViewChecked {
     // this.isAvailable = this.geoService.isAvailable;
     // this.runner = this.authService.currentUser;
     // this.tasksService.getRunnerTasks();
+    console.log(' HomePage -> ngOnInit -> this.convert', this.convert);
 
-    this.runner = JSON.parse(localStorage.getItem('user')); 
+    this.runner = JSON.parse(localStorage.getItem('user'));
     console.log(' HomePage -> ngOnInit -> this.runner', this.runner);
-
+    
     // this.geoService.runnerTracking.subscribe(rt => {
     // console.log(' HomePage -> ngOnInit -> rt', rt);
     //   this.isAvailable = rt.available;
@@ -55,9 +66,33 @@ export class HomePage implements OnInit, AfterViewChecked {
     this.doRefresh(0);
   }
 
+  ionDidLoad() {
+    this.platform.ready().then(() => {
+      // Get a FCM token
+        this.fcm.getToken()
+          .then( res => console.log(' MyApp -> getToken'));
+          // Listen to incoming messages
+        this.fcm.listenToNotifications().pipe(
+          tap(msg => {
+          // show a toast
+            const toast = this.toastCtrl.create({
+            message: msg.body,
+            duration: 1000000,            
+            position: 'top',
+            cssClass: 'toast',
+            showCloseButton: true
+            });
+            toast.present();
+          })
+        )
+        .subscribe();
+      });
+  }
+
   ngAfterViewChecked() {}
 
-  ionViewWillEnter() {
+  ionViewWillEnter() {  
+
     this.geoService.runnerTracking.subscribe(rt => {
       console.log(' HomePage -> ionViewWillEnter -> rt', rt);
       this.isAvailable = rt.available;
@@ -72,10 +107,7 @@ export class HomePage implements OnInit, AfterViewChecked {
           console.log(' HomePage -> this.updateInterval -> position udpdated');
         }, 60000)
       }      
-    });
-    console.log(' HomePage -> ionViewWillEnter -> this.updateInterval', this.updateInterval);
-    console.log(' HomePage -> ionViewWillEnter -> this.isAvailable', this.isAvailable);
-    
+    });  
   }
 
   ionViewDidEnter() {
@@ -83,6 +115,7 @@ export class HomePage implements OnInit, AfterViewChecked {
     if (this.isAvailable === false && this.updateInterval !== undefined) {
       clearInterval(this.updateInterval);
     }
+    
   }
 
   buttonClick(task) {
@@ -96,13 +129,21 @@ export class HomePage implements OnInit, AfterViewChecked {
   // }
 
   doRefresh(refresher) {
-    console.log(' HomePage -> doRefresh -> this.tasks', this.tasks);
     this.tasksSubscription = this.tasksService.getRunnerTasks()
       .subscribe( tsks => {        
-        console.log(' HomePage -> doRefresh -> this.tasks2', this.tasks);
         if (tsks && tsks.length > 0) {
-          tsks.forEach(tsk => tsk.startAt = new Date(tsk.startAt.seconds * 1000));
-          this.tasks = tsks; 
+          tsks.forEach(tsk => {
+            console.log(' HomePage -> doRefresh -> tsk', tsk);
+            tsk.startAt = tsk.startAt.toDate();
+            // tsk.startAt = new Date(tsk.startAt.seconds * 1000);
+            // tsk.distance = (tsk.distance / 1000).toFixed(1) + ' km';
+            // tsk.estimatedDuration = tsk.estimatedDuration !== undefined ? this.convertSecondsToHrsMinsSec(tsk.estimatedDuration) : '';
+          });
+          this.tasks = tsks;
+          this.tasks.forEach(tsk => {
+            tsk.distanceToKm = (tsk.distance / 1000).toFixed(1) + ' km';
+            tsk.durationToTime = tsk.estimatedDuration !== undefined ? this.convert.secondsToHrsMinsSec(tsk.estimatedDuration) : '';
+          })
           console.log(' HomePage -> doRefresh -> this.tasks3', this.tasks);
         }
         this.tasks = tsks;
@@ -110,6 +151,7 @@ export class HomePage implements OnInit, AfterViewChecked {
     // let tasksSubscription = this.tasksService.runnerTasks.subscribe( rts => {
     //   this.tasks = rts;      
     // });
+    console.log(' HomePage -> doRefresh -> refresher', refresher);
     if (refresher !== 0) refresher.complete();
   }
 
@@ -166,7 +208,7 @@ export class HomePage implements OnInit, AfterViewChecked {
           this.loading.dismiss();
           this.loading = null;
       }
-  }
+  } 
 
 }
 

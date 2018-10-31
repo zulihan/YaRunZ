@@ -17,12 +17,25 @@
 // To declare rules for a specific mode, create a child rule
 // for the .md, .ios, or .wp mode classes. The mode class is
 // automatically applied to the <body> element in the app.
-ion-icon {
-    color: #00acc1;    
+.toast {
+    .toast-wrapper {
+        transform: translateY(70px) !important;
+        left: 0;
+        right: 0;
+        margin: auto;
+        position: absolute;
+        z-index: 10;
+        display: block;
+        width: 100%;
+        max-width: 700px;
+        background: #55b7af;
+    }
+
+    
 }
 
-.icon-big {
-    font-size: 1.8em;
+ion-icon {
+    color: #00acc1;    
 }
 
 ion-row.row {
@@ -35,10 +48,6 @@ ion-row.row {
 
 h1.ng-tns-c0-0 {
     margin: 0;
-}
-
-ion-icon.icon-big.icon.icon-md.ion-md-alarm {
-    font-size: 1.8em;
 }
 
 .item-md {
@@ -93,3 +102,5 @@ ion-icon.icon-big.icon.icon-md.ion-md-alarm {
     flex-direction: column;
     align-items: center;
 }
+
+
