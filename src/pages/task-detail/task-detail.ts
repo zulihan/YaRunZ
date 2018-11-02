@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, DoCheck, AfterViewChecked, ViewContainerRef, TemplateRef } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, DoCheck, AfterViewChecked, ViewContainerRef, TemplateRef, OnDestroy } from '@angular/core';
 import { NavController, NavParams, Platform, ModalController, IonicPage, Navbar } from 'ionic-angular';
 
 import {style, state, animate, transition, trigger} from '@angular/animations';
@@ -17,6 +17,8 @@ import { TaskStatus, RunStatus, RunType } from "../../app/_enums/enums";
 import { environment } from '../../environments/environment'
 import { ConvertersService } from '../../app/_helpers/converters.service';
 import { Timestamp } from 'rxjs/internal-compatibility';
+import { RunnerTask } from '../../app/_models/runner-task';
+import { Observable, Subject } from 'rxjs/Rx';
 
     
 declare var google;
@@ -59,24 +61,34 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
   @ViewChild('map') map: MapComponent;
   @ViewChild('Navbar') navBar: Navbar;
 
+  ngUnsubscribe = new Subject();
+  updatePositionInterval;
+  updatePositionIntervalSub;
+
   FESTIVAL = environment.FESTIVAL;
+
+  // Enums
   public runType = RunType;
   public runStatus = RunStatus;
-  isAvailable;
+
+  isAvailable: boolean;
   available: boolean;
+
   runner: Runner;
   task: any;
+  taskStatus: string;
+  taskType: string;
   taskLocations = [];
 
+  // Range bar
   cursor;
   cursorMoveLeft = false;  
   rangeBar;
   activeBar;
-  // rangeBarActive = this.rangeBarActiveElts;
   rangeKnobHandle;
   ctaTextElement;
   ctaText = '';
-  ctaTextCompleted;  
+  ctaTextCompleted;
 
   showMap = true;
   mapConfig = 'detail-page';
@@ -87,8 +99,8 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
   legs; 
 
   runnerPosition;
-  directionsService;
-  updatePositionInterval;
+  directionsService;  
+
   totalDistance;
   updatedDistance;
   updatedDuration;
@@ -112,8 +124,6 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
   twoOfTwoStarted = false;
   twoOfTwoCompleted = false;
   
-  // twoOfTwoCompleted = false;
-
   oneOfThreeCompletedConfirmValue;
   oneOfThreeCompleted = false;
 
@@ -125,9 +135,10 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
   threeOfThreeStarted = false;
   threeOfThreeStartedConfirmValue;
   threeOfThreeCompletedConfirmValue;
-  // threeOfThreeCompleted = false; 
+  threeOfThreeCompleted = false;
 
   completed = false;
+  completedAt;
 
   confirmed = false;
 
@@ -153,83 +164,92 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
     private convert: ConvertersService) {
 
     this.task = navParams.data.task;  
-    console.log(' TaskDetailPage -> this.task', this.task);
-    this.taskLocations.push(this.task.from, this.task.to);    
+    // console.log(' TaskDetailPage -> this.task', this.task);
+    this.taskType = this.task.type;
+    this.taskStatus = this.task.status;
+    this.taskLocations.push(this.task.from, this.task.to);
     this.available = navParams.data.available;
     this.directionsService = new google.maps.DirectionsService();
+    console.log(' TaskDetailPage -> this.task.status, this.task.type', this.task.status, this.task.type);
+    this.checkTaskStatusUpdateView(this.task.status, this.task.type);
+    console.log(' TaskDetailPage -> this.started', this.started);
+    console.log(' TaskDetailPage -> this.completed', this.completed);
+    console.log(' TaskDetailPage -> this.task.type !== this.runType.THREELEGS', this.task.type !== this.runType.THREELEGS);
   }
 
   ngOnInit() {
-    console.log(' TaskDetailPage -> ngOnInit -> this.task', this.task);
+    // console.log(' TaskDetailPage -> ngOnInit -> this.task', this.task);
     if( this.isAvailable === undefined) this.isAvailable = this.available;
-    console.log(' TaskDetailPage -> ngOnInit -> this.available', this.available);
-    let runId = this.task.runId;
+    // console.log(' TaskDetailPage -> ngOnInit -> this.available', this.available);
+    console.log(' TaskDetailPage -> ngOnInit -> this.started', this.started);
+    console.log(' TaskDetailPage -> ngOnInit -> this.completed', this.completed);
+    // let runId = this.task.runId;
     // this.run = this.runzService.getRun(runId);  
     // this.checkTaskStatusUpdateView(this.task.status, this.task.type);
 }
 
-  ngAfterViewInit() {
-    this.updateCTAText(this.task.status);
-    console.log(' TaskDetailPage -> ngAfterViewInit -> this.ctaElement', this.ctaElement);
+  ngAfterViewInit() {    
     // this.isAvailable = this.geoService.isAvailable;
-    console.log(' TaskDetailPage -> ngAfterViewInit -> this.isAvailable', this.isAvailable);
+    // console.log(' TaskDetailPage -> ngAfterViewInit -> this.isAvailable', this.isAvailable);    
+    // console.log(' TaskDetailPage -> ngAfterViewInit -> this.completed', this.completed);
   }
 
   ionViewDidLoad() {
-  console.log(' TaskDetailPage -> ionViewDidLoad -> this.ctaText', this.ctaText);
-  this.platform.ready().then( () => {      
-      console.log(' TaskDetailPage -> ionViewDidLoad -> this.map.taskStatus', this.map.taskStatus);
-      this.checkTaskStatusUpdateView(this.task.status, this.task.type);
-      if (this.updatePositionInterval) clearInterval(this.updatePositionInterval);
-
-      this.map.resolveRoute(this.task.status, this.task.type);
-      this.map.returnDirections(this.task.status, this.map.route);
-      this.updatePBValue(this.task.status);
-
-      setTimeout( () => {
-        
-        if (this.task.status === RunStatus.STARTED ||
-            this.task.status === RunStatus.ON_THE_WAY_BACK ||
-            this.task.status === RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION) {
-            this.updatePositionInterval = setInterval( () => {
-              console.log(' TaskDetailPage -> this.updatePositionInterval -> updatePositionInterval', this.updatePositionInterval);
-              this.map.resolveRoute(this.task.status, this.task.type);
-              this.map.returnDirections(this.task.status, this.map.route);
-              this.updatePBValue(this.task.status);
-            }, 30000);
-        }        
-      }, 2000)
+    console.log(' TaskDetailPage -> ionViewDidLoad -> ionViewDidLoad()');
+    this.platform.ready().then( () => {
+      // console.log(' TaskDetailPage -> ionViewDidLoad -> this.map.taskStatus', this.map.taskStatus);        
+      // console.log(' TaskDetailPage -> ionViewDidLoad -> this.completed ', this.completed );
+      this.updateDataAndView(this.task.status)       
+      // this.updatePBValue(this.task.status);
+      // console.log(' TaskDetailPage -> ionViewDidLoad -> this.updatePBValue');
+      if (this.updatePositionIntervalSub !== undefined) {
+        this.updatePositionIntervalSub.unsubscribe();
+      }
+      // this.map.resolveRoute(this.task.status, this.task.type);
+      // this.map.returnDirections(this.task.status, this.map.route);
+      
+      this.updatePositionInterval = Observable.timer(10000, 20000);
+      
+      if (this.task.status === RunStatus.STARTED ||
+          this.task.status === RunStatus.ON_THE_WAY_BACK ||
+          this.task.status === RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION) {
+          
+        this.updatePositionIntervalSub = this.updatePositionInterval.subscribe( _ => {
+          console.log(' TaskDetailPage -> ionViewDidLoad -> this.updatePositionInterval', this.updatePositionInterval);
+          this.updateDataAndView(this.task.status);
+          // this.updatePBValue(this.task.status);
+        });
+          // console.log(' TaskDetailPage -> this.updatePositionInterval -> updatePositionInterval', this.updatePositionInterval);
+      }      
     })
   }
 
   ionViewWillEnter() {
-    console.log(' TaskDetailPage -> ionViewWillEnter -> this.isAvailable', this.isAvailable);
-    this.geoService.getStatus().subscribe(rt => {
-      console.log(' TaskDetailPage -> ionViewWillEnter -> rt', rt);
-      return this.isAvailable = rt.available;
-    })
+    // console.log(' TaskDetailPage -> ionViewWillEnter -> this.isAvailable', this.isAvailable);  
   }
 
   ionViewDidEnter() {
     this.runnerPosition = this.map.runnerPosition;
     this.distanceToNext = this.distanceToNext != undefined ? this.distanceToNext : '---';
-    console.log(' TaskDetailPage -> ionViewDidEnter -> this.distanceToNext', this.distanceToNext);
+    // console.log(' TaskDetailPage -> ionViewDidEnter -> this.distanceToNext', this.distanceToNext);
     this.durationToNext = this.durationToNext != undefined ? this.durationToNext : '---';
-    // this.totalDistance = ;
-    this.updatePBValue(this.task.status);    
-    console.log(' TaskDetailPage -> ionViewDidEnter -> this.updatePBValue');
+    // this.totalDistance = ;  
   }
 
   ngAfterViewChecked() {
-    if ( this.task.status !== 'has completed') this.updateCTAText(this.ctaText);
+    // if ( this.task.status !== 'has completed') this.updateCTAText(this.ctaText);
   }  
 
   ionViewWillLeave() {
-    console.log(' TaskDetailPage -> ionViewWillLeave -> this.updatePositionInterval', this.updatePositionInterval);
+    // console.log(' TaskDetailPage -> ionViewWillLeave -> this.updatePositionInterval', this.updatePositionInterval);
   }
 
   ionViewDidLeave() {
-    clearInterval(this.updatePositionInterval);
+    this.ngUnsubscribe.next(true);
+    this.ngUnsubscribe.complete();
+    this.ngUnsubscribe.unsubscribe();
+    if (this.updatePositionIntervalSub) 
+      this.updatePositionIntervalSub.unsubscribe();
   }
 
   updatedirectionsToNext(event) {
@@ -239,27 +259,26 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
     this.durationToNext = this.convert.secondsToHrsMinsSec(this.durationToNext);
   }
 
+  // From event emitter in MapComponent
   updateStartedAt(event: any) {
-    console.log(' TaskDetailPage -> updateStartedAt -> event', event);
+    // console.log(' TaskDetailPage -> updateStartedAt -> event', event);
     if (event !==  "" && event !== undefined) {
       this.startedAt = new Date(event.seconds *1000);
     }    
   }
 
   checkTaskStatusUpdateView(status, runType) {    
-    console.log('§§§§§§§§§§ TaskDetailPage -> checkTaskStatusUpdateView -> status', status);
-    console.log(' TaskDetailPage -> checkTaskStatusUpdateView -> this.ctaText', this.ctaText);
+    console.log(' TaskDetailPage -> checkTaskStatusUpdateView -> status', status);
     this.ctaText = '';
+    this.pbOptions.value = 0;
     switch(status) {
       case RunStatus.NOT_STARTED:
         this.started = false;
-        this.pbOptions.value = 0;
         this.pbOptions.mode = 'indeterminate';
         this.ctaText = runType !== RunType.THREELEGS ? 'START 1/2 ' : 'START 1/3 ';        
         break;
       case RunStatus.STARTED:
         this.started = true;    
-        this.pbOptions.value = 15;  // this.updatePBValue();
         this.pbOptions.mode = 'determinate';
         this.task.status = RunStatus.STARTED;
         this.task.taskStatus = TaskStatus.OK;
@@ -269,7 +288,7 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
         this.started = true;
         if (runType !== RunType.THREELEGS) {
           this.oneOfTwoCompleted = true;
-          console.log(' %%%%%%%%%%%%%%%%%%%%%% TaskDetailPage -> checkTaskStatusUpdateView -> this.oneOfTwoCompleted', this.oneOfTwoCompleted);
+          // console.log(' TaskDetailPage -> checkTaskStatusUpdateView -> this.oneOfTwoCompleted', this.oneOfTwoCompleted);
         } else {
           this.oneOfThreeCompleted = true;
         };
@@ -284,7 +303,6 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
         this.started = true;
         this.oneOfThreeCompleted = true;
         this.twoOfThreeStarted = true;
-        this.pbOptions.value = 100;
         this.pbOptions.mode = 'indeterminate';
         this.task.status = RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION;
         this.task.taskStatus = TaskStatus.OK;
@@ -311,8 +329,7 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
           this.twoOfThreeStarted = true;
           this.twoOfThreeCompleted = true;
           this.threeOfThreeStarted = true;
-        }        
-        this.pbOptions.value = 5;
+        }
         this.pbOptions.mode = 'determinate';
         this.task.status = RunStatus.ON_THE_WAY_BACK;
         this.task.taskStatus = TaskStatus.OK;
@@ -331,7 +348,7 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
           this.threeOfThreeStarted = true;
         }
         this.pbOptions.value = 100;
-        console.log(' ^^^^^^^^^^^^^^^^^^^^^^^^TaskDetailPage -> checkTaskStatusUpdateView -> this.pbOptions.value', this.pbOptions.value);
+        // console.log(' TaskDetailPage -> checkTaskStatusUpdateView -> this.pbOptions.value', this.pbOptions.value);
         this.pbOptions.mode = 'determinate';
         this.task.status = RunStatus.COMPLETED;
         this.task.taskStatus = TaskStatus.OK;
@@ -340,112 +357,130 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
   }
 
   updateStatus(confirmValue, text?) {
-    console.log(' TaskDetailPage -> updateStatus -> this.started', this.started);
-    console.log(' TaskDetailPage -> updateStatus -> confirmValue', confirmValue);
     console.log(' TaskDetailPage -> updateStatus -> text', text);
-    // this.cursor = this.ctaElement.nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children[2];
-    // this.activeBar = this.ctaElement.nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children[1];
+    console.log(' TaskDetailPage -> updateStatus -> confirmValue', confirmValue);
+    // console.log(' TaskDetailPage -> updateStatus -> this.started', this.started);
+
     if (confirmValue >= 80) {      
+      console.log(' TaskDetailPage -> updateStatus -> confirmValue >= 80');
       setTimeout( () => {
-        if (text === RunStatus.COMPLETED) {
-          this.task.isDone = true;
-        }
-        this.isAvailable = true;
-        this.task.updatedAt = new Date(Date.now()).getTime();
-        this.checkTaskStatusUpdateView(text, this.task.type);
-        this.updateDataAndView();
-        // let rideData = this.returnRideData(text);
-        console.log('************* Refreshed ********** ');
-        
-        console.log(' TaskDetailPage -> updateStatus -> this.ctaText', this.ctaText);
-        if (this.updatePositionInterval) clearInterval(this.updatePositionInterval);
-        if( text !== RunStatus.COMPLETED) {
-          this.map.resolveRoute(text, this.task.type);
-          this.map.returnDirections(text, this.map.route);
-          this.map.returnAndUpdateRideData(text, this.map.directions);
-          setTimeout( () => {
-            this.updatePBValue(text);
-            console.log(' *****************TaskDetailPage -> updateStatus -> this.updatePBValue');
-          },2000);
-          if( this.updatePositionInterval !== undefined &&
-              text === (RunStatus.ARRIVED_AT_DESTINATION || RunStatus.ARRIVED_AT_SECOND_DESTINATION)) {
-            clearInterval(this.updatePositionInterval);
-          } else {
-            this.updatePositionInterval = setInterval( () => {
-              console.log(' TaskDetailPage -> this.updatePositionInterval -> this.updatePositionInterval', this.updatePositionInterval);
-              this.map.resolveRoute(text, this.task.type);
-              this.map.returnDirections(text, this.map.route);
-              this.map.returnAndUpdateRideData(text, this.map.directions);
-              setTimeout( () => this.updatePBValue(text), 2000) 
-            }, 60000);
-          }          
-        } else if (text === RunStatus.COMPLETED) {
-          clearInterval(this.updatePositionInterval);
-        }
-      }, 800);
-    } else {
+        this.taskStatus = text;
+        this.isAvailable = true;          
+        console.log(' TaskDetailPage -> updateStatus -> this.isAvailable', this.isAvailable);        
+        console.log(' TaskDetailPage -> updateStatus -> text !(this.runStatus.COMPLETED)', !this.runStatus.COMPLETED);
+        switch(true) {
+          case (text !== RunStatus.COMPLETED):
+            console.log(' TaskDetailPage -> updateStatus -> case !RunStatus.COMPLETED');
+            this.updateDataAndView(text);
+            if( this.updatePositionIntervalSub !== undefined &&
+                text === (RunStatus.ARRIVED_AT_DESTINATION ||
+                          RunStatus.ARRIVED_AT_SECOND_DESTINATION)) {
+              this.updatePositionIntervalSub.unsubscribe();              
+            } else if (text !== (RunStatus.ARRIVED_AT_DESTINATION &&
+                        RunStatus.ARRIVED_AT_SECOND_DESTINATION )) {
+                          this.updatePositionIntervalSub = this.updatePositionInterval
+                .subscribe( _ => {
+                  console.log(' TaskDetailPage -> this.updatePositionInterval -> this.updatePositionInterval', this.updatePositionInterval);
+                  this.updateDataAndView(this.taskStatus);
+                });
+            }    
+            break;
+          case (text === RunStatus.COMPLETED):
+          this.updatePositionIntervalSub.unsubscribe();
+            if(!this.completed) {    
+              this.completed = true;
+              this.completedAt = new Date(Date.now());
+              this.task.updatedAt = new Date(Date.now());
+              this.task.closedAt = new Date(Date.now());
+              this.task.isDone = true;  
+            }
+            this.updateDataAndView(text);
+            break;
+        } 
+      }, 400);
+      
+    } else if (confirmValue > 0 && confirmValue < 80 ) {
       setTimeout( () => {
-        if (confirmValue > 0 && confirmValue < 80 ) {
-          this.moveCursorAndActiveBarLeft();
-        }
+        this.moveCursorAndActiveBarLeft();  
       },400);
     }
   }
 
-  updateDataAndView() {
-    console.log(' TaskDetailPage -> updateDataAndView -> this.task', this.task);
+  unSubscribeAllSubs() {
+    this.ngUnsubscribe.next(true);
+    this.ngUnsubscribe.complete();
+    this.ngUnsubscribe.unsubscribe();
+  }
+
+  updateDataAndView(taskStatus) {
+    this.map.resolveRoute(taskStatus, this.task.type);
+    if (this.map.route !== undefined) {
+      this.map.returnDirections(this.map.route);
+      setTimeout( () => {      
+        this.map.returnAndUpdateRideData(taskStatus, this.map.directions);
+        this.task.updatedAt = new Date(Date.now());
+        this.checkTaskStatusUpdateView(taskStatus, this.task.type);
+        this.updateTaskAndView();
+        // this.updatePBValue(text);
+        console.log(' TaskDetailPage -> updateDataAndView -> updateDataAndView');
+      },1000);
+    } else {
+      console.log(' TaskDetailPage -> updateDataAndView -> this.map.route === undefined', this.map.route === undefined);
+    }    
+    
+  }
+
+  updateTaskAndView() {
+    // console.log(' TaskDetailPage -> updateDataAndView -> this.task', this.task);
     this.tasksService.updateRunnerTask(this.task.id, this.task )
-      .then( response => {
-        console.log(' TaskDetailPage -> updateDataAndView -> response', response);
-        console.log(' TaskDetailPage -> updateDataAndView -> this.started', this.started);
-        this.geoService.updatePosition(this.isAvailable);                
+      .then( () => {        
+        // console.log(' TaskDetailPage -> updateDataAndView -> response', response);
+        // console.log(' TaskDetailPage -> updateDataAndView -> this.started', this.started);
+        this.geoService.updatePosition(this.isAvailable)    
+          .then( () => console.log(' TaskDetailPage -> updateDataAndView -> updatePosition'))
         
         if (!this.completed) {
           setTimeout( () => {                 
             this.moveCursorAndActiveBarLeft(); 
-            // this.updateCTAText(this.ctaText);                
-            this.map.resolveRoute(this.task.status, this.task.type);                                  
-            this.map.returnDirections(this.task.status, this.map.route);
-            // this.map.returnAndUpdateRideData(this.task.status, this.map.directions);                               
-          },200);
-          // setTimeout( () => {
-          //   console.log(' TaskDetailPage -> updateDataAndView -> this.map.rideData', this.map.rideData);
-          //   console.log(' TaskDetailPage -> updateDataAndView -> this.rideData', this.rideData);
-          //   if(this.rideData === undefined) {
-          //     this.rideData = this.map.rideData;
-          //     console.log(' TaskDetailPage -> updateDataAndView -> this.rideData', this.rideData);
-          //     this.runzService.updateRun(this.map.runId, this.rideData);
-          //     this.rideData = undefined;
-          //   }
-          // },1500);
-        }        
-        // if (text === 'has started') {
-        //   this.runzService.runInit(this.legs, this.task)
-        //   .then( response => console.log('response from runzService.runInit: ', response));
-        // };                      
-      });
+            this.updateCTAText(this.ctaText);                                
+          },200);  
+        }
+      })
+      .catch(error => console.error(error));
     
-    console.log(' TaskDetailPage -> updateDataAndView -> this.legs', this.legs);
+    // console.log(' TaskDetailPage -> updateDataAndView -> this.legs', this.legs);
   }
 
-  updatePBValue(taskStatus) {
-    if (taskStatus === RunStatus.STARTED || taskStatus === RunStatus.ARRIVED_AT_DESTINATION) {
-      this.pbOptions.value = this.map.legOnePercentageDistanceTravelled;
-      console.log(' TaskDetailPage -> updatePBValue -> this.pbOptions.value', this.pbOptions.value);
-    } else if (taskStatus === RunStatus.ON_THE_WAY_BACK) {
-      this.pbOptions.value = this.map.legTwoPercentageDistanceTravelled;
-      console.log(' TaskDetailPage -> updatePBValue -> this.pbOptions.value', this.pbOptions.value);
-    } else if ( taskStatus === RunStatus.COMPLETED) {
-      this.pbOptions.value = 100;
-    } 
+  /**
+   * Triggered when value changes in Map Component
+   * 
+  */  
+  updatePBValue(value) {
+    this.pbOptions.value = value;
+    // switch(taskStatus) {
+    //   case RunStatus.STARTED:
+    //     this.pbOptions.value = this.map.legOnePercentageDistanceTravelled;
+    //     break;
+    //   case RunStatus.ON_THE_WAY_BACK:
+    //     this.pbOptions.value = this.map.legTwoPercentageDistanceTravelled;
+    //     break;
+    //   case RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION:
+    //     this.pbOptions.value = this.map.legTwoPercentageDistanceTravelled;
+    //     break;
+    //   case RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION:
+    //     this.pbOptions.value = this.map.legTwoPercentageDistanceTravelled;
+    //     break;
+    //   case RunStatus.COMPLETED:
+    //     this.pbOptions.value = 100;
+    // }
   }
 
   updateCTAText(text) {
                                        // nativeElement.children[""0""].children[""0""].children[""0""].children[""0""].children[""0""].children[""0""]
     this.ctaTextElement = this.ctaElement.nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children["0"];
+    // console.log(' TaskDetailPage -> updateCTAText -> this.ctaTextElement', this.ctaTextElement);
+    // console.log(' TaskDetailPage -> updateCTAText -> this.ctaElement.nativeElement', this.ctaElement.nativeElement);
     this.ctaTextElement.textContent = text;
-
-    // nativeElement.children["0"].children["0"].children["0"].children["0"].children["0"].children["0"]
   }
 
   moveCursorAndActiveBarLeft() {
@@ -454,9 +489,9 @@ export class TaskDetailPage implements OnInit, AfterViewInit, AfterViewChecked {
     this.cursorMoveLeft = true;
     this.cursor.style.left = '0%';
     this.activeBar.style.right = '100%';
-    console.log(' TaskDetailPage -> moveCursorAndActiveBarLeft -> this.cursor', this.cursor);
-    console.log(' TaskDetailPage -> moveCursorAndActiveBarLeft -> this.cursor.style.left', this.cursor.style.left);
-    console.log(' TaskDetailPage -> moveCursorAndActiveBarLeft -> this.activeBar.style.right', this.activeBar.style.right);
+    // console.log(' TaskDetailPage -> moveCursorAndActiveBarLeft -> this.cursor', this.cursor);
+    // console.log(' TaskDetailPage -> moveCursorAndActiveBarLeft -> this.cursor.style.left', this.cursor.style.left);
+    // console.log(' TaskDetailPage -> moveCursorAndActiveBarLeft -> this.activeBar.style.right', this.activeBar.style.right);
   }
   
 }

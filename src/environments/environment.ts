@@ -5,6 +5,12 @@
 export const environment = {
   production: false,
   
+  FESTIVAL: {
+    NAME: 'Marsatac',
+    LAT: 43.270584762037416 ,
+    LNG: 5.39729277752383,
+    PLACE_ID: 'ChIJbW8XYqi4yRIRHeukMHYw9ig'
+  }
 };
 
 // apiKey: 'AIzaSyAwkFHZ4qZUoBSAVCz6SJCtldRfDmd20vE',

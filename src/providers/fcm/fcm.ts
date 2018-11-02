@@ -15,8 +15,8 @@ export class FcmProvider {
     private platform: Platform) {
     this.currentUser = JSON.parse(localStorage.getItem('user'));
     console.log(' FcmProvider -> this.currentUser', this.currentUser);
-    // this.currentUserId = this.currentUser.id;
-    this.currentUserId = 6;
+    this.currentUserId = this.currentUser.id;
+    // this.currentUserId = 6;
     console.log(' FcmProvider -> this.currentUser', this.currentUserId);
   }
 

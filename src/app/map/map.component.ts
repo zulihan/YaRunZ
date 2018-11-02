@@ -11,7 +11,8 @@ import {
   state,
   Input,
   EventEmitter,
-  Output
+  Output,
+  OnDestroy
 } from '@angular/core';
 import { IonicPage, NavController, NavParams, Platform, LoadingController } from 'ionic-angular';
 import { Geolocation, Geoposition } from '@ionic-native/geolocation';
@@ -40,6 +41,9 @@ import { Observable } from 'rxjs/Observable';
 import { RunzService } from '../_services/runz.service';
 import { Firebase } from '@ionic-native/firebase';
 import * as firebase from 'firebase';
+import { timestamp } from 'rxjs/operators';
+import { Subject } from 'rxjs/Subject';
+import { Subscription } from 'rxjs';
 
 // import { google } from 'google.maps';
 declare var google: any;
@@ -49,7 +53,8 @@ declare var google: any;
   templateUrl: './map.component.html'
 })
 
-export class MapComponent implements OnInit {
+export class MapComponent implements OnInit, OnDestroy {
+  
   // TODO: use enums
 
   @ViewChild('map_canvas') map_canvas: ElementRef;
@@ -74,6 +79,10 @@ export class MapComponent implements OnInit {
   
   @Output() startedAtUpdate = new EventEmitter();
 
+  @Output() legPercentageDistanceTravelled = new EventEmitter();
+
+  ngUnsubscribe = new Subject();
+
   startedAt;
   startedAtTS;
 
@@ -93,6 +102,7 @@ export class MapComponent implements OnInit {
   locations = [];
 
   runnerPosition: Observable<Geoposition>;
+  runnerPositionSubscription: Subscription;
   runnerLocationLat;
   runnerLocationLng;
   runnerMapPosition;
@@ -179,7 +189,7 @@ export class MapComponent implements OnInit {
   distanceToNext;
   durationToNext;
 
-  constructor(
+  constructor(     
       public navCtrl: NavController,
       public navParams: NavParams,
       private geolocation: Geolocation,
@@ -188,58 +198,113 @@ export class MapComponent implements OnInit {
       public loadingCtrl: LoadingController, 
       private runzService: RunzService) {
         this.directionsService = new google.maps.DirectionsService();
-        this.directionsDisplay = new google.maps.DirectionsRenderer();
-             
+        this.directionsDisplay = new google.maps.DirectionsRenderer();         
   }
 
-  ngOnInit() {          
-    
+  ngOnInit() {
+    this.platform.ready().then( () => {
+      this.loadMap();
+      this.loadPosition();
+      if (this.mapConfig === 'detail-page') {
+        this.getRun();        
+        // setTimeout( () => {
+        //   this.resolveRoute(this.taskStatus, this.runType);
+        //   this.returnDirections(this.taskStatus, this.route);
+        //   setTimeout( () => {
+        //     this.displayRoute(this.directions);
+        //     this.returnAndUpdateRideData(this.taskStatus, this.directions);
+        //   }, 1000);          
+        // }, 1000);
+        if(this.run === undefined) {
+          if(this.taskStatus === (
+                                  RunStatus.STARTED ||
+                                  RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION ||
+                                  RunStatus.ON_THE_WAY_BACK )) {
+            this.hasStarted = true;
+          }
+        }    
+      }        
+    })
   }
+
+  ngOnDestroy(): void {
+    this.unSubscribeAllSubs();
+  }  
 
   ionViewDidLoad() {  
-    // TODO: send request with run id  
-    // this.runSubscription = this.runzService.getRun(this.runId).subscribe( run => {
-    //   this.run = run;
-    // })
+    console.log(' ionViewDidLoad -> ionViewDidLoad');   
   }
 
-  ngAfterViewInit() { 
-     
-    this.platform.ready().then( () => {
-      console.log('$$$$$$$$$$$$$$$$$$ MapComponent -> ngAfterViewInit -> this.hasStarted', this.hasStarted);
-      this.loadPosition();
-      console.log(' MapComponent -> ngAfterViewInit -> this.runnerPosition', this.runnerPosition);
-      console.log(' MapComponent -> ngAfterViewInit -> this.mapConfig', this.mapConfig);
-      console.log(' MapComponent -> ngAfterViewInit -> this.taskLocations', this.taskLocations);
+  ionViewDidLeave() {
+    console.log(' ionViewDidLeave -> ionViewDidLeave');    
+  }
 
-      if (this.taskStatus === RunStatus.STARTED || this.taskStatus === RunStatus.ON_THE_WAY_BACK) {
-        this.hasStarted = true;
-      }  
-      
-    });
+  unSubscribeAllSubs() {
+    this.ngUnsubscribe.next(true);
+    this.ngUnsubscribe.complete();
+    this.ngUnsubscribe.unsubscribe();
+  }
+
+  getRun() {
+    return this.runzService.getRun(this.runId)
+      .then( run => {
+        if (run.exists) {      
+          this.run = run.data() as any;
+        }
+        if (this.run.started_at !== undefined) {
+          this.startedAt = this.run.started_at;
+          this.startedAtUpdate.emit(this.startedAt);
+        }
+        if(this.run.status === (
+          RunStatus.STARTED ||
+          RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION ||
+          RunStatus.ON_THE_WAY_BACK )) {
+            this.hasStarted = true;
+        }
+        if (this.run.legs.three !== undefined) {
+          this.legThreeDistance = this.run.legs.three.distance;
+          this.legThreeDuration = this.run.legs.three.duration;
+        }
+        this.legOneDistance = this.run.legs.one.distance;
+        this.legOneDuration = this.run.legs.one.duration;
+        this.legTwoDistance = this.run.legs.two.distance;
+        this.legTwoDuration = this.run.legs.two.duration;
+        this.distance_total = this.run.distance_total;
+        this.duration_total = this.run.duration_total;
+        this.distanceTravelled = this.run.distance_travelled;      
+    })
+    .catch(error => alert("Couldn't get the run from DB"));
   }
 
   doRefresh(refresher) {
-    console.log(' MapComponent -> doRefresh -> refresher', refresher);
-    console.log(' MapComponent -> doRefresh -> this.markers', this.markers);
+    // console.log(' MapComponent -> doRefresh -> refresher', refresher);
+    // console.log(' MapComponent -> doRefresh -> this.markers', this.markers);
     if (refresher !== 0) {
       this.removeMarkersFromMap(this.markers);
+      this.loadMap();
+      if (this.runnerPositionSubscription) this.unSubscribeAllSubs();
+      this.runnerMarker = undefined;
       this.loadPosition();
-      this.initMap();
-      this.getMarkers();
       // refresher.complete();
     }
-    console.log(' MapComponent -> doRefresh -> event', event);
+    // console.log(' MapComponent -> doRefresh -> event', event);
     // this.createMarkers();  
     console.log("refreshed !");
   }  
 
-  showLoading() {
+  showLoading(target) {
     if (!this.loading) {
-      this.loading = this.loadingCtrl.create({
-        content: 'Loading position...'
-      });
-        this.loading.present();
+      if(target === 'map') {
+        this.loading = this.loadingCtrl.create({
+          content: 'Loading map...'
+        });
+          this.loading.present();
+      } else if (target === 'position') {
+        this.loading = this.loadingCtrl.create({
+          content: 'Loading position...'
+        });
+          this.loading.present();
+      }  
     }
   }
 
@@ -253,78 +318,68 @@ export class MapComponent implements OnInit {
       }
   }
 
+  loadMap() {
+    this.showLoading('map');
+    this.map = this.initMap();
+    this.mapOptions.center = this.runnerMapPosition === undefined ? this.location : this.runnerMapPosition;
+    console.log(' MapComponent -> loadMap -> this.locations', this.locations);
+    this.getMarkers();
+    this.dismissLoading();
+  }
+
   loadPosition() {
-    this.showLoading();    
+    if (this.loading) this.dismissLoading();
+    this.showLoading('position');
     this.runnerPosition = this.geoService.runnerPosObs;
-    this.runnerPosition.subscribe( pos => {
+    this.runnerPosition.takeUntil(this.ngUnsubscribe).subscribe( pos => {
       if (pos !== undefined) {
-        console.log(' MapComponent -> loadPosition -> pos', pos);
+        // console.log(' MapComponent -> loadPosition -> pos', pos);
         this.runnerLocationLat = pos.coords.latitude;
         this.runnerLocationLng = pos.coords.longitude;
         this.runnerMapPosition = new LatLng(this.runnerLocationLat, this.runnerLocationLng);
-        this.mapOptions.center = this.runnerMapPosition === undefined ? this.location : this.runnerMapPosition;
-
-        if (this.runnerMarker !== undefined) {
-          this.updateRunnerMarker(this.runnerMarker, this.runnerMapPosition);
+        if (this.runnerMarker === undefined) {
+          this.addRunnerMarker();
         }
-        if (this.mapConfig === 'detail-page') {
-          console.log(' MapComponent -> ngAfterViewInit -> this.runId', this.runId);
-          this.resolveRoute(this.taskStatus, this.runType);
-          this.returnDirections(this.taskStatus, this.route);           
-          // this.getRunDistancesAndDurationsToUpdateAndDisplay(this.runId, status);
-        } else if (this.mapConfig === 'map-page'){
-          this.initMap();
-          this.getMarkers();
-        } 
-        this.dismissLoading();  
+        this.dismissLoading();
       } else {
-        console.log(' MapComponent -> loadPosition -> pos === undefined');
-        if (this.mapConfig === 'map-page') {
-          this.initMap();
-          this.getMarkers();
-          this.dismissLoading('Could not get your position. Please retry later');
-        }          
-        if (this.mapConfig === 'detail-page') {
-          setTimeout( () => {
-            this.resolveRoute(this.taskStatus, this.runType);
-            this.returnDirections(this.taskStatus, this.route);
-            this.dismissLoading('Could not get your position. Please retry later' );
-          }, 7000);
-          // this.loading.dismiss();
-        }        
+        // console.log(' MapComponent -> loadPosition -> pos === undefined');
+        this.dismissLoading('Could not get your position. Please retry later');
       }  
     },
     error => {          
       this.dismissLoading(error);
-      console.log(' MapComponent -> loadPosition -> error', error);
+      // console.log(' MapComponent -> loadPosition -> error', error);
     });
-  }
+  } 
 
   initMap() {
     let element = this.map_canvas.nativeElement;
     this.map = new google.maps.Map(element, this.mapOptions);            
-    console.log(' MapComponent -> initMap() this.map: ', this.map);     
-    return this.map;                  
+    console.log(' MapComponent -> initMap() this.map: ', this.map);
+    return this.map;
   }    
   
   getMarkers() {
-    if ( this.mapConfig === 'map-page') {
-      this.geoService.getLocations().subscribe( locs => {
-        this.locations = locs;      
-        console.log(' MapComponent -> getMarkers -> this.locations', this.locations);
-        this.addMarkersToMap(this.locations);   
-      });
-    } else {
-      this.threeLocations = [];
-      this.threeLocations = this.taskLocations.map( loc => loc);
-      if (this.runType === RunType.THREELEGS) {
-        this.threeLocations.push(this.festival);
-      }
-      console.log(' MapComponent -> getMarkers -> threeLocations', this.threeLocations);
-
-      this.addMarkersToMap(this.threeLocations);  
+    switch(this.mapConfig) {
+      case 'map-page':
+        this.geoService.getLocations().subscribe( locs => {
+          this.locations = locs;      
+          // console.log(' MapComponent -> getMarkers -> this.locations', this.locations);
+          this.addMarkersToMap(this.locations);   
+        });
+        break;
+      case 'detail-page':
+        this.locations = this.taskLocations;
+        if (this.runType === RunType.THREELEGS) {
+          this.threeLocations = this.locations.map( loc => loc);
+          this.threeLocations.push(this.festival);
+          // console.log(' MapComponent -> getMarkers -> threeLocations', this.threeLocations);
+          this.addMarkersToMap(this.threeLocations);
+        } else {          
+          this.addMarkersToMap(this.locations);
+        }
+        break;         
     }
-    this.addRunnerMarker();       
   }
 
   addMarkersToMap(locations) {
@@ -345,7 +400,7 @@ export class MapComponent implements OnInit {
   removeMarkersFromMap(markers) {
     while(markers.length) {
       markers.pop().setMap(null);
-      console.log(' MapComponent -> removeMarkersFromMap -> markers', markers);
+      // console.log(' MapComponent -> removeMarkersFromMap -> markers', markers);
     }    
   }
 
@@ -407,7 +462,7 @@ export class MapComponent implements OnInit {
     let destination = new google.maps.LatLng(this.FESTIVAL.LAT, this.FESTIVAL.LNG);
     let runnerPosition = new google.maps.LatLng(this.runnerLocationLat, this.runnerLocationLng);
     let departureTime = new Date(Date.now());
-
+    debugger;
     switch(taskStatus) {      
       case RunStatus.NOT_STARTED:
         switch(runType) {
@@ -416,13 +471,15 @@ export class MapComponent implements OnInit {
               location: to,
               stopover: true
             }]
+          debugger;
           break;
           case RunType.PICKUP:
             waypoints = [{
               location: from,
               stopover: true
             }]
-          break;
+          debugger;
+          break;          
           case RunType.THREELEGS:
           console.error(' MapComponent -> resolveRoute -> taskLocations[0]', this.taskLocations[0]);
           console.error(' MapComponent -> resolveRoute -> taskLocations[1]', this.taskLocations[1]);
@@ -431,59 +488,90 @@ export class MapComponent implements OnInit {
           // let locationTwo = "place_id:" + this.taskLocations[1]["place_id"];
           let locationTwo = new google.maps.LatLng(this.taskLocations[1].coord.latitude, this.taskLocations[1].coord.longitude);
 
-          // debugger;
-            waypoints = [
-              {
-                location: locationOne,
-                stopover: true
-              },
-              {
-                location: locationTwo,
-                stopover: true
-              }
-            ]
+          debugger;
+          waypoints = [
+            {
+              location: locationOne,
+              stopover: true
+            },
+            {
+              location: locationTwo,
+              stopover: true
+            }
+          ]
           console.error(' MapComponent -> resolveRoute -> waypoints', waypoints);
+          debugger;
           break;
         }
         departureTime = new Date(this.runStartAt);
-      break;
+        break;
       case RunStatus.STARTED:      
-        origin = this.hasStarted ? runnerPosition : origin;
-        console.log(' ********************MapComponent -> resolveRoute -> origin', origin);
-        destination = runType = RunType.DROPOFF ? to : from;
-        console.log(' *******************MapComponent -> resolveRoute -> destination', destination);
-      break;
+        origin = this.hasStarted ? 
+          (runnerPosition !== undefined ? runnerPosition : origin) : origin;
+        // console.log(' ********************MapComponent -> resolveRoute -> origin', origin);
+        destination = runType === RunType.DROPOFF ? to : from;
+        // console.log(' *******************MapComponent -> resolveRoute -> destination', destination);
+        debugger;
+        break;
       case RunStatus.ARRIVED_AT_DESTINATION:
-        origin = runType === RunType.DROPOFF ? from : to;
-        destination = runType === RunType.DROPOFF ? to : from; 
-      break;
+        origin = runType === RunType.DROPOFF ? to : from;
+        destination = runType === RunType.DROPOFF ? from : to; 
+        debugger;
+        break;
       case RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION:
-        origin = this.hasStarted ? runnerPosition : from;
+        origin = this.hasStarted ?
+                  (runnerPosition !== undefined ? runnerPosition : from) : from;
         destination = to;
-      break;
+        debugger;
+        break;
       case RunStatus.ARRIVED_AT_SECOND_DESTINATION:
-        origin = this.hasStarted ? runnerPosition : to;        
-      break;
+        origin = this.hasStarted ?
+                  (runnerPosition !== undefined ? runnerPosition : to) : to;
+        debugger;
+        break;
       case RunStatus.ON_THE_WAY_BACK:
-      origin = this.hasStarted ?
-                runnerPosition :
-                runType = RunType.DROPOFF || RunType.THREELEGS ?
-                to : from;
-      break;
+        if (this.hasStarted) {
+          if (runnerPosition !== undefined) {
+            origin = runnerPosition;
+          } else {
+            if (runType === RunType.DROPOFF || RunType.THREELEGS) {
+              origin = to;
+            } else {
+              origin = from;
+            }
+          }
+        } else {
+          if (runType === RunType.DROPOFF || RunType.THREELEGS) {
+            origin = to;
+          } else {
+            origin = from
+          }
+        }
+        // origin = this.hasStarted ?
+        //       (runnerPosition !== undefined ? runnerPosition :                        
+        //         runType === RunType.DROPOFF || RunType.THREELEGS ?
+        //         to : from) :
+        //       (runType === RunType.DROPOFF || RunType.THREELEGS ?
+        //       to : from)
+        debugger;
+        break;
       case RunStatus.COMPLETED:
+        debugger;
         switch(runType) {
           case RunType.DROPOFF:
             waypoints = [{
               location: to,
               stopover: true
             }]
-          break;
+            debugger;
+            break;
           case RunType.PICKUP:
             waypoints = [{
               location: from,
               stopover: true
             }]
-          break;
+            debugger;
+            break;
           case RunType.THREELEGS:
           let locationOne = new google.maps.LatLng(this.taskLocations[0].coord.latitude, this.taskLocations[0].coord.longitude);
           let locationTwo = new google.maps.LatLng(this.taskLocations[1].coord.latitude, this.taskLocations[1].coord.longitude);
@@ -497,6 +585,8 @@ export class MapComponent implements OnInit {
                 stopover: true
               }
             ]
+            debugger;
+            break;
           }
     }
 
@@ -522,7 +612,8 @@ export class MapComponent implements OnInit {
         }
       };
     }
-     
+    debugger;
+    console.log(' resolveRoute -> this.route', this.route);     
     // if (this.hasStarted ===) {
     //   this.returnDirections(taskStatus, this.route);
     //   setTimeout( () => {
@@ -532,18 +623,20 @@ export class MapComponent implements OnInit {
     // }   
   }
 
-  returnDirections(runStatus, route) {
+  returnDirections(route) {
+    debugger;
     this.directionsService.route(route,
         (response, status) => {
           if (status === 'OK') {
-            console.log(' MapComponent -> returnDirections -> response', response);
+            // console.log(' MapComponent -> returnDirections -> response', response);
             this.directions = response;
             this.legs = this.directions.routes[0].legs;
-            console.log(' MapComponent -> returnDirections -> this.legs.length', this.legs.length);
-            this.distance = response.routes[0].legs[0].distance.value;
-            this.duration = response.routes[0].legs[0].duration.value;
+            // console.log(' MapComponent -> returnDirections -> this.legs.length', this.legs.length);
+            this.distance = this.directions.routes[0].legs[0].distance.value;
+            this.duration = this.directions.routes[0].legs[0].duration.value;
             this.distanceTravelled;
             this.directionsChange.emit({distance: this.distance, duration: this.duration});
+            debugger;
             console.log('this.directionsChange.emit({distance: this.distance, duration: this.duration})', this.directionsChange)
             if (this.legs.length === 2 ) {
               this.legOneDistance = this.legs[0].distance.value;
@@ -558,28 +651,22 @@ export class MapComponent implements OnInit {
               this.legThreeDistance = this.legs[2].distance.value;
               this.legThreeDuration = this.legs[2].duration.value;
             }
-            if (runStatus === (
-              RunStatus.STARTED ||
-              RunStatus.ON_THE_WAY_BACK ||
-              RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION)) {
-                this.hasStarted = true;
-            }
-            this.map = this.initMap();
-            this.getMarkers();
-            console.log(' ££££££££££££££££££££££££££MapComponent -> returnDirections -> this.directions', this.directions);
-            if (this.run === undefined) {
-              console.log(' MapComponent -> loadPosition -> this.run === undefined', this.run === undefined);
-              this.getRunDistancesAndDurationsToUpdateAndDisplay(this.runId, this.taskStatus);
-            } else {
-              this.returnAndUpdateRideData(this.taskStatus, this.directions);
-            }  
+            // if (runStatus === (
+            //   RunStatus.STARTED ||
+            //   RunStatus.ON_THE_WAY_BACK ||
+            //   RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION)) {
+            //     this.hasStarted = true;
+            // }
+            
+            // console.log(' ££££££££££££££££££££££££££MapComponent -> returnDirections -> this.directions', this.directions);
+            // this.returnAndUpdateRideData(this.taskStatus, this.directions);
+             
           } else {
-            window.alert('Directions request failed due to ' + status);
-            this.map = this.initMap();
-            this.getMarkers();
+            window.alert('Directions request failed due to ' + status);        
           }
         }
       );
+      debugger;
   }
 
   displayRoute(directions) {
@@ -588,7 +675,7 @@ export class MapComponent implements OnInit {
         strokeColor: '#00acc1'
       }
     }); 
-    console.log(' MapComponent -> displayRoute -> this.directionsDisplay', this.directionsDisplay);
+    // console.log(' MapComponent -> displayRoute -> this.directionsDisplay', this.directionsDisplay);
     this.directionsDisplay.setOptions( { suppressMarkers: true } );
     this.directionsDisplay.setDirections(directions);
     this.directionsDisplay.setMap(this.map); 
@@ -596,383 +683,252 @@ export class MapComponent implements OnInit {
   }    
 
   returnAndUpdateRideData(status, directions) {
+    console.log(' returnAndUpdateRideData -> this.hasStarted', this.hasStarted);
+    debugger;
+    // if( (this.legOneDistance && this.legOneDuration === undefined) &&
+    //     (this.legTwoDistance && this.legTwoDuration === undefined)) {
+    //       this.getRunDistancesAndDurationsToUpdateAndDisplay(this.runId, status);
+    // } else {
 
-    if( (this.legOneDistance && this.legOneDuration === undefined) &&
-        (this.legTwoDistance && this.legTwoDuration === undefined)) {
-          this.getRunDistancesAndDurationsToUpdateAndDisplay(this.runId, status);
-    } else {
-      if (this.hasStarted === true){
+    if (this.hasStarted === true){
+      debugger;
+      switch(status) {
+        case RunStatus.STARTED:
+        debugger;
+          // console.log(' ********************* $$$$$$$$ MapComponent -> returnAndUpdateRideData -> this.hasStarted', this.hasStarted);
+          this.distanceTravelled = this.legOneDistance - this.distance;
+          // console.log(' MapComponent -> returnAndUpdateRideData -> this.distanceTravelled', this.distanceTravelled);
+          this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
+          this.legOnePercentageDistanceTravelled = this.calculatePercentageDone(this.distance, this.legOneDistance, this.duration, this.legOneDuration);
+          this.legPercentageDistanceTravelled.emit(this.legOnePercentageDistanceTravelled);
+          this.rideData = {
+            "legs.one.percent_dist_travelled": this.legOnePercentageDistanceTravelled
+          }    
+          break;
 
-        switch(status) {
-          // TODO: implement threeLegs case        
-          case RunStatus.STARTED:
-  
-            console.log(' ********************* $$$$$$$$ MapComponent -> returnAndUpdateRideData -> this.hasStarted', this.hasStarted);
-            this.distanceTravelled = this.legOneDistance - this.distance;
-            console.log(' MapComponent -> returnAndUpdateRideData -> this.distanceTravelled', this.distanceTravelled);
-            this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
-            this.legOnePercentageDistanceTravelled = this.calculatePercentageDone(this.distance, this.legOneDistance, this.duration, this.legOneDuration);
-            this.rideData = {
-              "status": RunStatus.STARTED,
-              "distance_travelled": this.distanceTravelled,
-              "percent_dist_travelled": this.percentageOfTotalDistTravelled,
-              "legs.one.percent_dist_travelled": this.legOnePercentageDistanceTravelled
-            }    
+        case RunStatus.ARRIVED_AT_DESTINATION:
+          debugger;
+          // console.log(' MapComponent -> returnAndUpdateRideData -> this.run', this.run);
+          // console.log(' MapComponent -> returnAndUpdateRideData -> this.legDistance', this.legDistance);
+          
+          this.distanceTravelled = this.legOneDistance;
+          this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
+          this.legOnePercentageDistanceTravelled = 100;
+          this.rideData = {
+            "legs.one.completed_at": new Date(Date.now()),
+            "legs.one.percent_dist_travelled": 100 // this.legOnePercentageDistanceTravelled
+          }                    
+          this.hasStarted = false;
+          debugger;  
           break;
   
-          case RunStatus.ARRIVED_AT_DESTINATION:
-  
-            console.log(' MapComponent -> returnAndUpdateRideData -> this.run', this.run);
-            console.log(' MapComponent -> returnAndUpdateRideData -> this.legDistance', this.legDistance);
-            
-            this.distanceTravelled = this.legOneDistance;
-            this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
-            this.legOnePercentageDistanceTravelled = 100;
-            this.rideData = {
-              "status": RunStatus.ARRIVED_AT_DESTINATION,
-              "distance_travelled": this.distanceTravelled,
-              "percent_dist_travelled": this.percentageOfTotalDistTravelled,
-              "legs.one.completed_at": new Date(Date.now()),
-              "legs.one.percent_dist_travelled": 100 // this.legOnePercentageDistanceTravelled
-            }                    
-          this.hasStarted = false;  
+        case RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION:
+
+          this.distanceTravelled = this.legOneDistance + (this.legTwoDistance - this.distance);
+          this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
+          this.legThreePercentageDistanceTravelled = this.calculatePercentageDone(this.distance, this.legThreeDistance, this.duration, this.legThreeDuration);
+          this.legPercentageDistanceTravelled.emit(this.legThreePercentageDistanceTravelled);
+          this.rideData = {
+            "legs.three.percent_dist_travelled": this.legThreePercentageDistanceTravelled            
+          }    
           break;
-    
-          case RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION:
   
-            this.distanceTravelled = this.legOneDistance + (this.legTwoDistance - this.distance);
+        case RunStatus.ARRIVED_AT_SECOND_DESTINATION:    
+          this.distanceTravelled = this.legOneDistance + this.legTwoDistance;
+          this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
+          this.legTwoPercentageDistanceTravelled = 100;
+          this.rideData = {
+            "legs.two.completed_at": new Date(Date.now()),
+            "legs.two.percent_dist_travelled": 100 // this.legOnePercentageDistanceTravelled
+          }     
+          this.hasStarted = false;
+          break;
+  
+        case RunStatus.ON_THE_WAY_BACK:
+          debugger;
+          if (this.runType !== RunType.THREELEGS) {
+            this.distanceTravelled = this.distanceTravelled + (this.legTwoDistance - this.distance);            
+            this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
+            this.legTwoPercentageDistanceTravelled = this.calculatePercentageDone(this.distance, this.legTwoDistance, this.duration, this.legTwoDuration);
+            this.legPercentageDistanceTravelled.emit(this.legTwoPercentageDistanceTravelled);
+            this.rideData = {
+              "legs.two.percent_dist_travelled": this.legTwoPercentageDistanceTravelled
+            };
+          } else if (this.runType === RunType.THREELEGS) {
+            this.distanceTravelled = this.legOneDistance + this.legTwoDistance + (this.legThreeDistance - this.distance);
             this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
             this.legThreePercentageDistanceTravelled = this.calculatePercentageDone(this.distance, this.legThreeDistance, this.duration, this.legThreeDuration);
+            this.legPercentageDistanceTravelled.emit(this.legThreePercentageDistanceTravelled);
             this.rideData = {
-              "status": RunStatus.ON_THE_WAY_BACK,
-              "distance_travelled": this.distanceTravelled,
-              "percent_dist_travelled": this.percentageOfTotalDistTravelled,
               "legs.three.percent_dist_travelled": this.legThreePercentageDistanceTravelled            
-            }    
+            }
+          }
+          debugger;
           break;
-    
-          case RunStatus.ARRIVED_AT_SECOND_DESTINATION:    
-            this.distanceTravelled = this.legOneDistance + this.legTwoDistance;
-            this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
+        case RunStatus.COMPLETED:
+          if (this.runType === RunType.THREELEGS) {
+            this.legThreePercentageDistanceTravelled = 100;
+            this.rideData = {
+              "legs.three.completed_at": new Date(Date.now()).toString(),
+              "legs.three.percent_dist_travelled": 100,
+              "percent_dist_travelled": 100
+            }
+          } else {
             this.legTwoPercentageDistanceTravelled = 100;
             this.rideData = {
-              "status": RunStatus.ARRIVED_AT_DESTINATION,
-              "distance_travelled": this.distanceTravelled,
-              "percent_dist_travelled": this.percentageOfTotalDistTravelled,
-              "legs.two.completed_at": new Date(Date.now()),
-              "legs.two.percent_dist_travelled": 100 // this.legOnePercentageDistanceTravelled
-            }     
-            this.hasStarted = false;
-          break;
-    
-          case RunStatus.ON_THE_WAY_BACK:
-            if (this.runType !== RunType.THREELEGS) {
-              this.distanceTravelled = this.distanceTravelled + (this.legTwoDistance - this.distance);            
-              this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
-              this.legTwoPercentageDistanceTravelled = this.calculatePercentageDone(this.distance, this.legTwoDistance, this.duration, this.legTwoDuration);
-              this.rideData = {
-                "status": RunStatus.ON_THE_WAY_BACK,
-                "distance_travelled": this.distanceTravelled,
-                "percent_dist_travelled": this.percentageOfTotalDistTravelled,
-                "legs.two.percent_dist_travelled": this.legTwoPercentageDistanceTravelled               
-              };            
-            } else if (this.runType === RunType.THREELEGS) {  
-              this.distanceTravelled = this.legOneDistance + this.legTwoDistance + (this.legThreeDistance - this.distance);
-              this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
-              this.legThreePercentageDistanceTravelled = this.calculatePercentageDone(this.distance, this.legThreeDistance, this.duration, this.legThreeDuration);
-              this.rideData = {
-                "status": RunStatus.ON_THE_WAY_BACK,
-                "distance_travelled": this.distanceTravelled,
-                "percent_dist_travelled": this.percentageOfTotalDistTravelled,
-                "legs.three.percent_dist_travelled": this.legThreePercentageDistanceTravelled            
-              }  
+              "legs.two.completed_at": new Date(Date.now()).toString(),
+              "legs.two.percent_dist_travelled": 100,
+              "percent_dist_travelled": 100
             }
+          }
+          this.hasStarted = false;
+          this.percentageOfTotalDistTravelled = 100;            
           break;
-          case RunStatus.COMPLETED:
-            if (this.runType === RunType.THREELEGS) {
-              this.legThreePercentageDistanceTravelled = 100;
-              this.rideData = {
-                "status": RunStatus.COMPLETED,
-                "legs.three.completed_at": new Date(Date.now()).toString(),
-                "legs.three.percent_dist_travelled": 100,
-                "percent_dist_travelled": 100
-              }
-            } else {
-              this.legTwoPercentageDistanceTravelled = 100;
-              this.rideData = {
-                "status": RunStatus.COMPLETED,
-                "legs.two.completed_at": new Date(Date.now()).toString(),
-                "legs.two.percent_dist_travelled": 100,
-                "percent_dist_travelled": 100
-              }
+      };
+    } else if (this.hasStarted === false) {
+      debugger;
+      switch(status) {
+        case RunStatus.NOT_STARTED:
+          let distance_total = 0;
+          let duration_total = 0;
+          this.legs = directions.routes[0].legs;
+          this.distanceTravelled = 0;
+          this.legs.forEach( leg => {
+            distance_total += leg.distance.value;
+            duration_total += leg.duration.value;
+          });
+          this.rideData = {
+            "distance_total": distance_total,
+            "duration_total": duration_total,
+            "legs.one.distance": this.legOneDistance,
+            "legs.one.duration": this.legOneDuration,
+          }; 
+          this.hasStarted = false;   
+          break;
+        case RunStatus.STARTED:
+          // console.log(' ********************* $$$$$$$$ MapComponent -> returnAndUpdateRideData -> this.hasStarted', this.hasStarted);
+          // this.leg = response.route[0].legs[0];
+          debugger;
+          this.startedAt = new Date(Date.now());
+          this.startedAtTS = firebase.firestore.Timestamp.fromDate(this.startedAt);
+          this.startedAtUpdate.emit(this.startedAtTS);
+          debugger;
+          this.rideData = {
+              "started_at": this.startedAtTS,
+              "legs.one.distance": this.distance,
+              "legs.one.duration": this.duration,
+              "legs.one.started_at": this.startedAtTS,
+              "percent_dist_travelled": 0,
+              "distance_travelled": 0,           
+              "legs.one.percent_dist_travelled": 0,                 
             }
-            this.hasStarted = false;
-            this.percentageOfTotalDistTravelled = 100;
-            
+              
+          console.log(' MapComponent -> returnAndUpdateRideData ->  this.rideData',  this.rideData);
+          this.hasStarted = true;
+          debugger;
           break;
-        };
-      } else {
-        switch(status) {
-          // TODO: implement threeLegs case
-          case RunStatus.NOT_STARTED:
-            let distance_total = 0;
-            let duration_total = 0;
-            this.legs = directions.routes[0].legs;
-            this.distanceTravelled = 0;
-            this.legs.forEach( leg => {
-              distance_total += leg.distance.value;
-              duration_total += leg.duration.value;
-            });
-            this.rideData = {
-              "distance_total": distance_total,
-              "duration_total": duration_total,
-              "legs.one.distance": this.legOneDistance,
-              "legs.one.duration": this.legOneDuration,
-            };    
+        case RunStatus.ARRIVED_AT_DESTINATION: 
+          // console.log(' MapComponent -> returnAndUpdateRideData -> this.run', this.run);
+          // console.log(' MapComponent -> returnAndUpdateRideData -> this.legOneDistance', this.legOneDistance);
+          this.distanceTravelled = this.legOneDistance;
+          this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
+          this.legOnePercentageDistanceTravelled = 100;
+          this.rideData = {
+            "percent_dist_travelled": this.percentageOfTotalDistTravelled,
+            "legs.one.completed_at": new Date(Date.now()),
+            "legs.one.percent_dist_travelled": 100 // this.legOnePercentageDistanceTravelled
+          }          
+          this.hasStarted = false;
+          debugger;  
           break;
-          case RunStatus.STARTED:
-            console.log(' ********************* $$$$$$$$ MapComponent -> returnAndUpdateRideData -> this.hasStarted', this.hasStarted);
-            // this.leg = response.route[0].legs[0];
-            this.startedAt = new Date(Date.now());
-            this.startedAtTS = firebase.firestore.Timestamp.fromDate(this.startedAt);
-            this.startedAtUpdate.emit(this.startedAtTS);
-            // debugger;
-            this.rideData = {
-                "status": RunStatus.STARTED,
-                "percent_dist_travelled": 0,
-                "distance_travelled": 0,
-                "started_at": this.startedAtTS,
-                "legs.one.distance": this.distance,
-                "legs.one.duration": this.duration,
-                "legs.one.percent_dist_travelled": 0,
-                "legs.one.started_at": this.startedAtTS                 
-              }
-              console.log(' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!MapComponent -> returnAndUpdateRideData ->  this.rideData !!!!!!!!!!!!!!!!!!!!!!!!!',  this.rideData);
-            this.hasStarted = true;
+  
+        case RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION:
+          // console.log(' MapComponent -> returnAndUpdateRideData -> this.legs', this.legs);
+          this.distanceTravelled = this.legOneDistance + this.legTwoDistance + (this.legThreeDistance - this.distance);
+          this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
+          this.rideData = {
+            "percent_dist_travelled": this.percentageOfTotalDistTravelled,
+            "legs.three.distance": this.distance,
+            "legs.three.duration": this.duration,
+            "legs.three.started_at": new Date(Date.now()).toString(),
+            "legs.three.percent_dist_travelled": 0
+          }                
+        this.hasStarted = true;
           break;
-          case RunStatus.ARRIVED_AT_DESTINATION: 
-            console.log(' MapComponent -> returnAndUpdateRideData -> this.run', this.run);
-            console.log(' MapComponent -> returnAndUpdateRideData -> this.legOneDistance', this.legOneDistance);
-            this.distanceTravelled = this.legOneDistance;
+
+        case RunStatus.ARRIVED_AT_SECOND_DESTINATION:
+          this.distanceTravelled = this.legOneDistance + this.legTwoDistance;
+          this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
+          this.legTwoPercentageDistanceTravelled = 100;
+          this.rideData = {
+            "percent_dist_travelled": this.percentageOfTotalDistTravelled,
+            "legs.two.completed_at": new Date(Date.now()),
+            "legs.two.percent_dist_travelled": 100 // this.legOnePercentageDistanceTravelled
+          }
+          this.hasStarted = false;
+          break;
+  
+        case RunStatus.ON_THE_WAY_BACK:
+          debugger;
+          if (this.runType !== RunType.THREELEGS) {    
+            this.distanceTravelled = this.legOneDistance + (this.legTwoDistance - this.distance);
             this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
-            this.legOnePercentageDistanceTravelled = 100;
             this.rideData = {
-              "status": RunStatus.ARRIVED_AT_DESTINATION,
-              "distance_travelled": this.distanceTravelled,
-              "percent_dist_travelled": this.percentageOfTotalDistTravelled,
-              "legs.one.completed_at": new Date(Date.now()),
-              "legs.one.percent_dist_travelled": 100 // this.legOnePercentageDistanceTravelled
-            }          
-            this.hasStarted = false;  
-          break;
-    
-          case RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION:
-            console.log(' MapComponent -> returnAndUpdateRideData -> this.legs', this.legs);
+              "legs.two.distance": this.distance,
+              "legs.two.duration": this.duration,
+              "legs.two.started_at": new Date(Date.now()).toString(),
+              "legs.two.percent_dist_travelled": 0                    
+            } 
+            debugger;                         
+          } else if (this.runType === RunType.THREELEGS) {
+            // console.log(' MapComponent -> returnAndUpdateRideData -> this.legs', this.legs);
             this.distanceTravelled = this.legOneDistance + this.legTwoDistance + (this.legThreeDistance - this.distance);
             this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
             this.rideData = {
-              "distance_travelled": this.distanceTravelled,
-              "status": RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION,
-              "percent_dist_travelled": this.percentageOfTotalDistTravelled,
               "legs.three.distance": this.distance,
               "legs.three.duration": this.duration,
               "legs.three.started_at": new Date(Date.now()).toString(),
               "legs.three.percent_dist_travelled": 0                    
-            }                
+            }            
+          }
           this.hasStarted = true;
+          debugger;
           break;
+        case RunStatus.COMPLETED:
+          break;
+      };
+    }
 
-          case RunStatus.ARRIVED_AT_SECOND_DESTINATION:
-            this.distanceTravelled = this.legOneDistance + this.legTwoDistance;
-            this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
-            this.legTwoPercentageDistanceTravelled = 100;
-            this.rideData = {
-              "status": RunStatus.ARRIVED_AT_DESTINATION,
-              "distance_travelled": this.distanceTravelled,
-              "percent_dist_travelled": this.percentageOfTotalDistTravelled,
-              "legs.two.completed_at": new Date(Date.now()),
-              "legs.two.percent_dist_travelled": 100 // this.legOnePercentageDistanceTravelled
-            }
-            this.hasStarted = false;
-          break;
-    
-          case RunStatus.ON_THE_WAY_BACK:
-            if (this.runType !== RunType.THREELEGS) {    
-              this.distanceTravelled = this.legOneDistance + (this.legTwoDistance - this.distance);
-              this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
-              this.rideData = {
-                "distance_travelled": this.distanceTravelled,                 
-                "percent_dist_travelled": this.percentageOfTotalDistTravelled,
-                "legs.two.distance": this.distance,
-                "legs.two.duration": this.duration,
-                "legs.two.started_at": new Date(Date.now()).toString(),
-                "legs.two.percent_dist_travelled": 0                    
-              }                          
-            } else if (this.runType === RunType.THREELEGS) {
-              console.log(' MapComponent -> returnAndUpdateRideData -> this.legs', this.legs);
-              this.distanceTravelled = this.legOneDistance + this.legTwoDistance + (this.legThreeDistance - this.distance);
-              this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
-              this.rideData = {
-                "distance_travelled": this.distanceTravelled,
-                "status": RunStatus.ON_THE_WAY_BACK,
-                "percent_dist_travelled": this.percentageOfTotalDistTravelled,
-                "legs.three.distance": this.distance,
-                "legs.three.duration": this.duration,
-                "legs.three.started_at": new Date(Date.now()).toString(),
-                "legs.three.percent_dist_travelled": 0                    
-              }            
-            }
-            this.hasStarted = true;
-          break;
-          case RunStatus.COMPLETED:
-            if (this.run.completed_at !== undefined) {
-              if (this.runType === RunType.THREELEGS) {
-                this.legThreePercentageDistanceTravelled = 100;
-                this.rideData = {
-                  "status": RunStatus.COMPLETED,
-                  "legs.three.completed_at": new Date(Date.now()).toString(),
-                  "legs.three.percent_dist_travelled": 100,
-                  "percent_dist_travelled": 100
-                }
-              } else {
-                this.legTwoPercentageDistanceTravelled = 100;
-                this.rideData = {
-                  "status": RunStatus.COMPLETED,
-                  "legs.two.completed_at": new Date(Date.now()).toString(),
-                  "legs.two.percent_dist_travelled": 100,
-                  "percent_dist_travelled": 100
-                }
-              }
-              this.hasStarted = false;
-              this.percentageOfTotalDistTravelled = 100;
-            }
-            
-          break;
-        };
-      }
-      console.log(' MapComponent -> returnAndUpdateRideData -> this.directions', this.directions);
+    if (!(status === RunStatus.COMPLETED && this.hasStarted === false)) {
+      this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
+      this.rideData["status"] = status;
+      this.rideData["distance_travelled"] = this.distanceTravelled;
+      this.rideData["percent_dist_travelled"] = this.percentageOfTotalDistTravelled;
+
+      // console.log(' MapComponent -> returnAndUpdateRideData -> this.directions', this.directions);
       this.runzService.updateRun(this.runId, this.rideData).then( () => {
-        
+      
         this.displayRoute(this.directions);
       });
-    }      
-    // return this.rideData;    
-  }
-
-  getRunDistancesAndDurationsToUpdateAndDisplay(runId, status) {
-    console.log(' %%%%%%%%%%%%%%%%%%%%%%%%%MapComponent -> getRunDistancesAndDurationsToUpdateAndDisplay -> status', status);
-    console.log(' MapComponent -> getRunDistancesAndDurationsToUpdateAndDisplay -> runId', runId);
-    this.runzService.getRun(runId).then( doc => {
-      if (doc.exists) {      
-        this.run = doc.data() as any;
-        console.log(' |||||||||||||||||||| MapComponent -> getRunDistancesAndDurationsToUpdateAndDisplay -> this.run', this.run);
-        //TODO: check if it's ok to call it this.legs since it could be the route legs
-        // so make sure you're not overwriting...
-        this.legs = this.run.legs;
-        this.rideData = {};
-        console.log(' MapComponent -> getRunDistancesAndDurationsToUpdateAndDisplay -> this.run.started_at', this.run.started_at);
-        if (this.run.started_at !== "" && this.run.started_at !== undefined) {
-          this.startedAt = this.run.started_at;
-          console.error(this.startedAt);
-          this.startedAtUpdate.emit(this.startedAt);
-        }
-        console.error(' MapComponent -> getRunDistancesAndDurationsToUpdateAndDisplay -> startedAt', this.startedAt);
-        if (this.run.legs.three !== undefined) {
-          this.legThreeDistance = this.run.legs.three.distance;
-          this.legThreeDuration = this.run.legs.three.duration;
-        }
-        this.legOneDistance = this.run.legs.one.distance;
-        this.legOneDuration = this.run.legs.one.duration;
-        this.legTwoDistance = this.run.legs.two.distance;
-        this.legTwoDuration = this.run.legs.two.duration;
-        this.distance_total = this.run.distance_total;
-        this.duration_total = this.run.duration_total;
-        this.distanceTravelled = this.run.distance_travelled;
-          
-        switch(status) {
-          case RunStatus.NOT_STARTED:        
-          this.percentageOfTotalDistTravelled = 0;
-          this.distanceTravelled = 0;
-          break;
-          case RunStatus.STARTED:
-            this.distanceTravelled = this.legOneDistance - this.distance;
-            this.legOnePercentageDistanceTravelled = this.calculatePercentageDone(this.distance, this.legOneDistance, this.duration, this.legOneDuration);
-            this.rideData = {
-              "legs.one.percent_dist_travelled": this.legOnePercentageDistanceTravelled            
-            }
-          break;
-          case RunStatus.ARRIVED_AT_DESTINATION:
-            console.log(' ------------------- MapComponent -> getRunDistancesAndDurationsToUpdateAndDisplay -> this.legOneDistance', this.legOneDistance);
-            this.distanceTravelled = this.legOneDistance;
-            this.rideData = {
-              "legs.one.percent_dist_travelled": 100            
-            }
-          break;
-          case RunStatus.ON_THE_WAY_TO_SECOND_DESTINATION:
-          this.distanceTravelled = this.run.distance_travelled + (this.legThreeDistance - this.distance);
-          this.legTwoPercentageDistanceTravelled = this.calculatePercentageDone(this.distance, this.legTwoDistance, this.duration, this.legTwoDuration);
-          this.rideData = {
-            "legs.two.percent_dist_travelled": this.legTwoPercentageDistanceTravelled,
-          };
-          break;
-          case RunStatus.ARRIVED_AT_SECOND_DESTINATION:
-          this.rideData = {
-            "legs.two.percent_dist_travelled": 100
-          };
-          break;
-          case RunStatus.ON_THE_WAY_BACK:
-            if ( this.run.legs.three !== undefined) {
-              this.distanceTravelled = this.run.distance_travelled + (this.legThreeDistance - this.distance);
-              this.legThreePercentageDistanceTravelled = this.calculatePercentageDone(this.distance, this.legThreeDistance, this.duration, this.legThreeDuration);
-              this.rideData = {
-                "legs.three.percent_dist_travelled": this.legThreePercentageDistanceTravelled
-              };
-            } else {
-              this.distanceTravelled = this.run.distance_travelled + (this.legTwoDistance - this.distance);
-              this.legTwoPercentageDistanceTravelled = this.calculatePercentageDone(this.distance, this.legTwoDistance, this.duration, this.legTwoDuration);
-              this.rideData = {
-                "legs.two.percent_dist_travelled": this.legTwoPercentageDistanceTravelled
-              };
-            }    
-          break;
-        } 
-        console.log('²²²²²²²²²²²²²²²²²²²²² MapComponent -> getRunDistancesAndDurationsToUpdateAndDisplay -> this.distanceTravelled', this.distanceTravelled);
-
-        this.percentageOfTotalDistTravelled = this.calculateTotalPercentageDone(this.distanceTravelled, this.distance_total);
-        this.rideData["status"] = status;
-        this.rideData["distance_travelled"] = this.distanceTravelled;
-        this.rideData["percent_dist_travelled"] = this.percentageOfTotalDistTravelled;  
-        console.log(' MapComponent -> getRunDistancesAndDurations -> this.rideData', this.rideData);
-        console.log(' MapComponent -> getRunDistancesAndDurationsToUpdateAndDisplay -> this.directions', this.directions);
-        this.runzService.updateRun(this.runId, this.rideData).then( () => {
-          this.returnDirections(status, this.route);          
-          this.displayRoute(this.directions);
-        });
-
-      } else {
-          console.error("MapComponent -> ngAfterViewInit -> No such document!");
-      }
-    }).catch(function(error) {
-      console.error("MapComponent -> ngAfterViewInit -> Error getting document:", error);
-    });
-    
-  }
+    } else {
+      this.displayRoute(this.directions);
+    }  
+  } 
   
-
   calculateTotalPercentageDone(distance, distance_total) {
     let percentageDistanceDone = (distance * 100) / distance_total;
-    console.log(' MapComponent -> calculateTotalPercentageDone -> percentageDistanceDone', percentageDistanceDone);    
+    // console.log(' MapComponent -> calculateTotalPercentageDone -> percentageDistanceDone', percentageDistanceDone);
     return Math.round(percentageDistanceDone);
   }
 
   calculatePercentageDone(distance, legDistance, duration , legDuration) {
     let percentageDistanceDone = ((legDistance - distance) * 100) / legDistance;
-    console.log(' MapComponent -> calculatePercentageDone -> percentageDistanceDone', percentageDistanceDone);
+    // console.log(' MapComponent -> calculatePercentageDone -> percentageDistanceDone', percentageDistanceDone);
     
     let percentageDurationDone = ((legDuration - duration)  * 100) / legDuration;
-    console.log(' MapComponent -> calculatePercentageDone -> percentageDurationDone', percentageDurationDone);
+    // console.log(' MapComponent -> calculatePercentageDone -> percentageDurationDone', percentageDurationDone);
     let percentageDistanceAndDurationAverage = (percentageDistanceDone + percentageDurationDone) / 2;
-    console.log(' MapComponent -> calculatePercentageDone -> percentageDistanceAndDurationAverage', percentageDistanceAndDurationAverage);
+    // console.log(' MapComponent -> calculatePercentageDone -> percentageDistanceAndDurationAverage', percentageDistanceAndDurationAverage);
     return Math.round(percentageDistanceAndDurationAverage);
   }
 
@@ -1012,10 +968,6 @@ export class MapComponent implements OnInit {
       }
     }
     return increments;
-  }
-
-  calculateRouteLeft() {
-    // 
   }  
   
 }  
@@ -1030,4 +982,6 @@ export class MapComponent implements OnInit {
             // this.returnAndUpdateRideData(taskStatus, response);
             // if (this.taskType === 'threeLegs')
             //   this.leg = response.route[0].legs[0];  
+            
+
             

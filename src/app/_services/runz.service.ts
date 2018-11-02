@@ -95,12 +95,11 @@ export class RunzService {
         
     }
 
-    // TODO: Change for run id
-    getRun(id?) {
+    getRun(id) {
         // return this.runDocument = this.runzCollection.doc(id);
         // console.log(' RunzService -> getRun -> this.runDocument', this.runDocument);
         //  this.runDocument.valueChanges();
-        let run;
+        
         return this.runzCollection.doc(id).ref.get();
     }
 

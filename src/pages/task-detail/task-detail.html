@@ -1,7 +1,7 @@
 <ion-header>
   <ion-navbar #NavBar color="primary">
     <ion-title>
-      Ya RuN
+      Ya Run
     </ion-title>
   </ion-navbar>
 </ion-header>
@@ -32,7 +32,7 @@
             <!-- <div>
               <ion-icon name="speedometer"></ion-icon>
             </div> -->
-            <div>
+            <div *ngIf="!completed; else runCompleted">
               <p>Next destination in: </p>
               <p>
                 <span>{{ distanceToNext }}</span>
@@ -40,20 +40,23 @@
                 <span>{{ durationToNext }}</span>
               </p>
             </div>
+            <ng-template #runCompleted>
+              <p>Finished at: </p>
+              <!-- <h2> {{ completedAt | date: 'HH:mm' }} </h2> -->
+            </ng-template>
           </div>
       </ion-item>
     </ion-list-header>   
   </ion-list>
-  <ion-list> 
+  <!-- <ion-list>  -->
     <ion-grid>
+      <!-- Progress bar -->
       <ion-row>
         <ion-col col-1>      
-        </ion-col>
+        </ion-col>        
         <ion-col col-10>
           <div class="route-progress-section">
             <ion-icon name="pin"></ion-icon>
-            <!-- <progress-bar [progress]="100" [color]="'#488aff'">
-            </progress-bar> -->
             <mat-progress-bar class="route-progress-margin"
               class="progress-bar-margin"
               [color]="pbOptions.color"
@@ -67,7 +70,9 @@
         <ion-col col-1>
         </ion-col>
       </ion-row>
+      <!-- Origine > Destination -->
       <ion-row>
+        <!-- Origin -->
         <ion-col col-5>
           <div class="route-location" 
             *ngIf="task.type === runType.DROPOFF && !started">
@@ -112,12 +117,12 @@
             <p>{{ task.to.name }}</p>
           </div>
         </ion-col>
+        <!-- Arrow -->
         <ion-col col-2>
           <div class="direction-arrow">></div>
-        </ion-col>   
-
-        <ion-col col-5>
-
+        </ion-col>
+        <!-- Destination -->
+        <ion-col col-5>          
           <div class="route-location" 
             *ngIf="task.type === runType.DROPOFF && !started">
             <p>{{ task.to.name }}</p>
@@ -170,7 +175,7 @@
         </ion-col>        
         <ion-col col-8>
           <ion-list *ngIf="task.type !== runType.THREELEGS; else threeLegs" #ctaList>        
-            <ion-item *ngIf="!started && !completed">                      
+            <ion-item *ngIf="started === false && completed === false">                      
               <ion-range
                 #cursorMoveLeft 
                 [(ngModel)]="startConfirmValue"
@@ -211,7 +216,7 @@
                 (ionChange)="updateStatus(twoOfTwoCompletedConfirmValue, runStatus.COMPLETED)" >
               </ion-range>
               </ion-item>                 
-            <ion-item *ngIf="completed" >
+            <ion-item *ngIf="completed === true" >
               <ion-label [@enterAnimation]>
                 <p>RUN COMPLETED !</p>
                 <p>CONGRATS !</p>
@@ -281,29 +286,26 @@
                   step="5"
                   (ionChange)="updateStatus(threeOfThreeCompletedConfirmValue, runStatus.COMPLETED)" >
                 </ion-range>
-              </ion-item>
-              <ion-item *ngIf="completed" >
-                <ion-label [@enterAnimation]>
-                  <p>RUN COMPLETED !</p>
-                  <p>CONGRATS !</p>
-                  <p>THANKS !</p> 
-                </ion-label>                    
-              </ion-item>
-              {{ task.type }} /  {{ task.status }} {{ started }} {{ oneOfTwoCompleted }}  {{ twoOfTwoStarted }}         
-        {{ !started && !completed }} {{ started && !oneOfTwoCompleted }} {{ oneOfTwoCompleted && !twoOfTwoStarted }} {{ twoOfTwoStarted && !twoOfTwoCompleted }} {{ twoOfTwoCompleted }}              
+              </ion-item>                            
             </ion-list>
+            <ion-item *ngIf="completed" >
+              <ion-label [@enterAnimation]>
+                <p>RUN COMPLETED !</p>
+                <p>CONGRATS !</p>
+                <p>THANKS !</p> 
+              </ion-label>                    
+            </ion-item>
+            {{ task.type }} /  {{ task.status }} {{ started }} {{ oneOfTwoCompleted }}  {{ twoOfTwoStarted }}         
+            {{ !started && !completed }} {{ started && !oneOfTwoCompleted }} {{ oneOfTwoCompleted && !twoOfTwoStarted }} {{ twoOfTwoStarted && !twoOfTwoCompleted }} {{ twoOfTwoCompleted }}
           </ng-template>
         </ion-col>
           <!-- En of Range Button -->
         <ion-col col-2>            
         </ion-col>
       </ion-row>
+      <!-- Map -->
       <ion-row>
         <ion-col class="map-container">
-          <!-- <div *ngIf="modalOpened">
-            {{ modalOpened }}
-            <page-map-modal [inputTemplate]="myTemplate"></page-map-modal>
-          </div> -->
           <div #myTemplate class="map_wrapper">
             <app-map #map
               [mapConfig]="mapConfig"
@@ -313,34 +315,12 @@
               [runId]="task.runId"
               [runStartAt]="task.startAt"
               (directionsChange)="updatedirectionsToNext($event)"
-              (startedAtUpdate)="updateStartedAt($event)">
+              (startedAtUpdate)="updateStartedAt($event)"
+              (legPercentageDistanceTravelled)="updatePBValue($event)">
             </app-map>
           </div>
         </ion-col>
-      </ion-row>          
-          <!-- <ion-row>
-            <ion-col col-2>                  
-            </ion-col>
-            <ion-col col-8> 
-              <ion-label *ngIf="!started && !oneOfTwoCompleted" [@enterAnimation]>
-                  Start 1 of 2
-              </ion-label>
-              <ion-label *ngIf="started && !oneOfTwoCompleted " [@enterAnimation]>
-                  complete 1 of 2
-              </ion-label>
-              <ion-label *ngIf="oneOfTwoCompleted && !twoOfTwoStarted" [@enterAnimation]>
-                start 2 of 2
-              </ion-label>
-              <ion-label *ngIf="twoOfTwoStarted && !twoOfTwoCompleted" [@enterAnimation]>
-                complete 2 of 2
-              </ion-label>
-                <ion-label *ngIf="twoOfTwoCompleted" [@enterAnimation]>
-                  RUN COMPLETED !
-              </ion-label>
-            </ion-col>
-            <ion-col col-2>                  
-            </ion-col>           
-          </ion-row> -->
+      </ion-row>
     </ion-grid>      
-  </ion-list>    
+  <!-- </ion-list>     -->
 </ion-content>
